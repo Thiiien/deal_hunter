@@ -72,3 +72,10 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+.agents/
+.claude/
+.cursor/
+
+# Temporary / Scratch
+scratch/

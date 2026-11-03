@@ -1,0 +1,10 @@
+services:
+  deal-hunter:
+    build: .
+    restart: unless-stopped
+    shm_size: 2gb          # Chromium needs this to avoid OOM crashes on heavy pages
+    env_file: .env
+    volumes:
+      - ./data:/app/data   # SQLite DB + browser profile (persistent across rebuilds)
+    ports:
+      - "127.0.0.1:5000:5000"   # dashboard only on localhost; add auth before exposing publicly

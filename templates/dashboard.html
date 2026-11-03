@@ -1,0 +1,4132 @@
+<!DOCTYPE html>
+
+<html lang="vi">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Deal Hunter Dashboard</title>
+
+<style>
+
+  :root {
+
+    --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3e;
+
+    --text: #e2e8f0; --muted: #8892a4; --accent: #6c63ff;
+
+    --green: #22c55e; --red: #ef4444; --yellow: #f59e0b;
+
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+
+  header h1 { font-size: 18px; font-weight: 700; }
+
+  .badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+
+  main { padding: 20px 24px; }
+
+
+
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+
+               padding: 14px 20px; min-width: 160px; }
+
+  .stat-card .label { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+
+  .stat-card .value { font-size: 26px; font-weight: 700; }
+
+  .stat-card .value.green { color: var(--green); }
+
+
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+
+  .toolbar input { background: var(--surface); border: 1px solid var(--border); color: var(--text);
+
+                   padding: 8px 12px; border-radius: 6px; flex: 1; min-width: 260px; outline: none; }
+
+  .toolbar input:focus { border-color: var(--accent); }
+
+  button { background: var(--accent); color: #fff; border: none; padding: 8px 16px;
+
+           border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+
+  button:hover { opacity: 0.85; }
+
+  button.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+
+  button.secondary:hover { border-color: var(--accent); }
+
+
+
+  .filters { display: flex; gap: 6px; margin-bottom: 14px; }
+
+  .filters button { padding: 5px 12px; font-size: 12px; }
+
+  .filters button.active { background: var(--accent); }
+
+
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th { background: var(--surface); padding: 10px 14px; text-align: left; font-size: 12px;
+
+       color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
+
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: rgba(108,99,255,0.06); }
+
+
+
+  .status-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+  .status-badge.real_deal { background: rgba(34,197,94,.15); color: var(--green); }
+
+  .status-badge.fake_list_price { background: rgba(239,68,68,.12); color: var(--red); }
+
+  .status-badge.insufficient_history { background: rgba(245,158,11,.12); color: var(--yellow); }
+
+  .status-badge.normal { background: rgba(136,146,164,.1); color: var(--muted); }
+
+
+
+  .price { font-weight: 600; }
+
+  .disc { color: var(--green); font-size: 12px; }
+
+  .disc.negative { color: var(--red); }
+
+
+
+  a.buy-link { color: var(--accent); text-decoration: none; font-size: 12px; }
+
+  a.buy-link:hover { text-decoration: underline; }
+
+
+
+  #toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface);
+
+           border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px;
+
+           display: none; font-size: 13px; z-index: 9999; }
+
+
+
+  #session-status { font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 600; margin-left: auto; }
+
+  #session-status.valid { background: rgba(34,197,94,.15); color: var(--green); }
+
+  #session-status.invalid { background: rgba(239,68,68,.12); color: var(--red); }
+
+  button.login-btn { background: #e11d48; }
+
+  button.login-btn:hover { opacity: 0.85; }
+
+  button.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+
+
+  .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+
+  .nav-tab-btn { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted);
+
+                 font-size: 15px; font-weight: 600; padding: 10px 18px; cursor: pointer; border-radius: 8px 8px 0 0;
+
+                 transition: all 0.2s ease; margin-bottom: -2px; display: flex; align-items: center; gap: 8px; }
+
+  .nav-tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+
+  .nav-tab-btn.active { color: #fff; border-bottom-color: var(--accent); background: rgba(108,99,255,0.1); }
+
+  .tab-count { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.1); font-weight: 700; }
+
+  .nav-tab-btn.active .tab-count { background: var(--accent); color: #fff; }
+
+
+
+  .category-section { margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+  .category-header { padding: 14px 20px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+
+                     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+  .category-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+
+  .category-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+
+  .badge-hot-discount { background: linear-gradient(135deg, #ef4444, #f59e0b); color: #fff; font-weight: 700;
+
+                        padding: 3px 9px; border-radius: 999px; font-size: 11px; }
+
+  .deal-strikethrough { text-decoration: line-through; color: var(--muted); font-size: 11px; margin-right: 6px; }
+
+  .empty-deal-card { padding: 48px 24px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; }
+
+
+
+  @media(max-width: 600px) { main { padding: 12px; } header { padding: 12px; } }
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+  <h1>🔥 Deal Hunter</h1>
+
+  <span class="badge" id="last-scan-badge">Loading…</span>
+
+  <span id="session-status" class="invalid">⌛ Shopee: …</span>
+
+  <span id="session-lzd-status" class="invalid" style="font-size:12px;padding:3px 10px;border-radius:999px;font-weight:600;margin-left:6px">⌛ Lazada: …</span>
+
+  <button id="login-btn" class="login-btn" onclick="triggerLogin()" style="margin-left:8px;display:none">🔑 Đăng nhập Shopee</button>
+
+  <button id="cookie-btn" class="secondary" onclick="openCookieModal('shopee')" style="margin-left:8px">📋 Cookies Shopee</button>
+
+  <button id="cookie-lzd-btn" class="secondary" onclick="openCookieModal('lazada')" style="margin-left:6px;border-color:#0f146d">📋 Cookies Lazada</button>
+
+  <button id="settings-btn" class="secondary" onclick="openSettingsModal()" style="margin-left:8px">⚙️ Cài đặt</button>
+
+</header>
+
+<div id="cookie-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;align-items:center;justify-content:center">
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:90%;max-width:550px">
+
+    <h3 style="margin-top:0" id="cookie-modal-title">📋 Nhập Cookies Shopee</h3>
+
+    <p style="color:var(--muted);font-size:12px;line-height:1.5" id="cookie-modal-desc">
+
+      Dán chuỗi cookies từ trình duyệt (dạng <code>SPC_EC=...; SPC_ST=...; SPC_U=...</code> hoặc JSON xuất từ extension Cookie-Editor).<br>
+
+      👉 Bắt buộc phải có <b>SPC_EC</b> để vượt qua kiểm tra bảo mật Shopee.
+
+    </p>
+
+    <textarea id="cookie-textarea" rows="8" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:monospace;font-size:12px" placeholder="Dán cookie chuỗi key=val; hoặc JSON vào đây..."></textarea>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+
+      <button class="secondary" onclick="closeCookieModal()">Đóng</button>
+
+      <button id="save-cookies-btn" onclick="saveCookies()">Lưu & Kích hoạt</button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div id="settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;align-items:center;justify-content:center">
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto">
+
+    <h3 style="margin-top:0">⚙️ Cài đặt hệ thống</h3>
+
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px">
+
+      Tùy chỉnh tần suất quét tự động riêng biệt cho từng phân hệ và ngưỡng giá lọc rác.
+
+    </p>
+
+
+
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">⏱️ Tần suất quét từng tab (phút)</div>
+
+      
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">📦 Sản phẩm theo dõi:</label>
+
+          <input id="setting-interval-input" type="number" min="1" max="1440" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px" placeholder="Mặc định: 60">
+
+          <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-interval-input').value=1">1p ⚡</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-interval-input').value=2">2p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-interval-input').value=5">5p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-interval-input').value=15">15p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-interval-input').value=30">30p</button>
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+
+            <label style="font-size:12px;font-weight:600;color:var(--text)">🔍 Theo từ khóa:</label>
+
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;user-select:none">
+
+              <input type="checkbox" id="setting-keyword-enabled" onchange="updateSubsystemToggle('keyword')" style="cursor:pointer;width:14px;height:14px">
+
+              <span id="setting-keyword-status-hint" style="font-weight:600;color:var(--green)">Đang bật</span>
+
+            </label>
+
+          </div>
+
+          <input id="setting-keyword-interval-input" type="number" min="1" max="1440" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;transition:opacity 0.2s" placeholder="Mặc định: 180">
+
+        </div>
+
+        <div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+
+            <label style="font-size:12px;font-weight:600;color:var(--text)">🔥 Siêu Sale & Flash Sale:</label>
+
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;user-select:none">
+
+              <input type="checkbox" id="setting-megasale-enabled" onchange="updateSubsystemToggle('megasale')" style="cursor:pointer;width:14px;height:14px">
+
+              <span id="setting-megasale-status-hint" style="font-weight:600;color:var(--green)">Đang bật</span>
+
+            </label>
+
+          </div>
+
+          <input id="setting-megasale-interval-input" type="number" min="1" max="1440" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;transition:opacity 0.2s" placeholder="Mặc định: 60">
+
+        </div>
+
+        <div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+
+            <label style="font-size:12px;font-weight:600;color:var(--text)">⚠️ Săn lỗi giá:</label>
+
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;user-select:none">
+
+              <input type="checkbox" id="setting-price-error-enabled" onchange="updateSubsystemToggle('price-error')" style="cursor:pointer;width:14px;height:14px">
+
+              <span id="setting-price-error-status-hint" style="font-weight:600;color:var(--green)">Đang bật</span>
+
+            </label>
+
+          </div>
+
+          <input id="setting-price-error-interval-input" type="number" min="1" max="1440" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;transition:opacity 0.2s" placeholder="Mặc định: 60">
+
+          <div id="setting-price-error-quick-btns" style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-price-error-interval-input').value=1">1p ⚡</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-price-error-interval-input').value=2">2p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-price-error-interval-input').value=5">5p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-price-error-interval-input').value=15">15p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-price-error-interval-input').value=30">30p</button>
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+
+            <label style="font-size:12px;font-weight:600;color:var(--text)">🏷️ Lazada TMALL:</label>
+
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;user-select:none">
+
+              <input type="checkbox" id="setting-tmall-enabled" onchange="updateSubsystemToggle('tmall')" style="cursor:pointer;width:14px;height:14px">
+
+              <span id="setting-tmall-status-hint" style="font-weight:600;color:var(--green)">Đang bật</span>
+
+            </label>
+
+          </div>
+
+          <input id="setting-tmall-interval-input" type="number" min="1" max="1440" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;transition:opacity 0.2s" placeholder="Mặc định: 120">
+
+          <div id="setting-tmall-quick-btns" style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-tmall-interval-input').value=15">15p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-tmall-interval-input').value=30">30p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-tmall-interval-input').value=60">60p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-tmall-interval-input').value=120">120p</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+
+
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+
+      <div style="font-size:12px;font-weight:700;color:var(--yellow);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">🛡️ Bộ lọc rác & Xuất xứ</div>
+
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Giá gốc tối thiểu để săn deal (₫):</label>
+
+      <input id="setting-min-price-input" type="number" min="0" step="50000" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px" placeholder="Mặc định: 500000">
+
+      <span style="font-size:11px;color:var(--muted);display:block;margin-top:4px">Bỏ qua các deal có giá trước giảm &lt; 500.000₫ (loại bỏ hàng phụ kiện/rác).</span>
+
+      
+
+      <div style="margin-top:12px">
+
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text)">
+
+          <input type="checkbox" id="setting-unknown-input">
+
+          <span>Cho phép lưu sản phẩm chưa rõ xuất xứ (gắn nhãn vàng cảnh báo)</span>
+
+        </label>
+
+        <span style="font-size:11px;color:var(--muted);display:block;margin-top:4px;margin-left:24px">Mặc định nếu thiếu thông tin xuất xứ sẽ bị loại bỏ nghiêm ngặt. Bật tính năng này nếu muốn giữ lại với nhãn ⚠️ Chưa rõ.</span>
+
+      </div>
+
+    </div>
+
+
+
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">🏷️ Khoảng giá cào TMALL (Thiết bị & Phụ kiện điện tử)</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Giá tối thiểu (₫):</label>
+
+          <input id="setting-tmall-min-price-input" type="number" min="0" step="50000" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px" placeholder="Mặc định: 100000">
+
+        </div>
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Giá tối đa (₫):</label>
+
+          <input id="setting-tmall-max-price-input" type="number" min="0" step="100000" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px" placeholder="Mặc định: 20000000">
+
+        </div>
+
+      </div>
+
+      <span style="font-size:11px;color:var(--muted);display:block;margin-top:4px">Chỉ cào sản phẩm Thiết bị điện tử & Phụ kiện điện tử từ kênh TMALL có giá trong khoảng trên.</span>
+
+    </div>
+
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">🔔 Thông báo Telegram</div>
+      <div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="setting-only-target-alerts">
+          <span style="font-weight:600">Chỉ nhận thông báo khi đạt giá mong muốn (Sản phẩm theo dõi)</span>
+        </label>
+        <span style="font-size:11px;color:var(--muted);display:block;margin-top:4px;margin-left:24px">Tạm tắt thông báo biến động giảm giá thường và deal lỗi giá; chỉ gửi thông báo khi sản phẩm trong tab Sản phẩm theo dõi giảm về dưới hoặc bằng mức giá mục tiêu. Thông báo kỹ thuật (hết hạn cookie, sản phẩm bị gỡ) vẫn duy trì.</span>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+
+      <button class="secondary" onclick="closeSettingsModal()">Đóng</button>
+
+      <button onclick="saveSettings()">Lưu cài đặt</button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<main>
+
+  <div class="stats" id="stats"></div>
+
+
+
+  <div class="nav-tabs">
+
+    <button class="nav-tab-btn active" id="tab-tracked-btn" onclick="switchMainTab('tracked')">
+
+      📦 Sản phẩm theo dõi <span class="tab-count" id="tracked-tab-count">0</span>
+
+    </button>
+
+    <button class="nav-tab-btn" id="tab-megasale-btn" onclick="switchMainTab('megasale')">
+
+      🔥 Siêu Sale & Giảm sâu <span class="tab-count" id="megasale-tab-count">0</span>
+
+    </button>
+
+    <button class="nav-tab-btn" id="tab-anomalies-btn" onclick="switchMainTab('anomalies')" style="display:none;border-color:rgba(239,68,68,0.4)">
+
+      ⚠️ Nghi lỗi giá <span class="tab-count" id="anomalies-tab-count" style="background:#ef4444;color:#fff">0</span>
+
+    </button>
+
+    <button class="nav-tab-btn" id="tab-keywords-btn" onclick="switchMainTab('keywords')" style="display:none">
+
+      🔍 Theo từ khóa <span class="tab-count" id="keywords-tab-count">0</span>
+
+    </button>
+
+    <button class="nav-tab-btn" id="tab-tmall-btn" onclick="switchMainTab('tmall')" style="display:none">
+
+      🏷️ Lazada TMALL <span class="tab-count" id="tmall-tab-count">0</span>
+
+    </button>
+
+  </div>
+
+
+
+  <div id="tab-tracked-content">
+
+    <div class="toolbar">
+
+      <input id="url-input" type="url" placeholder="Dán link sản phẩm Shopee / Lazada / TikTok…" onkeydown="if(event.key==='Enter') addProduct()">
+
+      <button onclick="addProduct()">➕ Theo dõi link</button>
+
+      <button class="secondary" onclick="triggerScan()">⚡ Quét ngay</button>
+
+    </div>
+
+    <div class="toolbar" style="margin-top:-8px">
+
+      <input id="kw-input" type="text" placeholder="Hoặc nhập từ khóa sản phẩm (ví dụ: chuột logitech g102, bàn phím cơ aula f75)…" onkeydown="if(event.key==='Enter') searchKeyword(true)">
+
+      <button id="kw-btn" onclick="searchKeyword(true)">🎯 Săn giá thấp nhất</button>
+
+      <button id="kw-all-btn" class="secondary" onclick="searchKeyword(false)" title="Tìm và thêm top 5 shop bán chạy để theo dõi so sánh song song" style="padding:8px 12px;font-size:12px">So sánh Top 5</button>
+
+    </div>
+
+
+
+    <div class="filters" style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+
+      <span style="font-size:12px;color:var(--muted);font-weight:600">Sàn:</span>
+
+      <button class="active" id="plat-all" onclick="setPlatformFilter('all')">Tất cả sàn</button>
+
+      <button id="plat-shopee" onclick="setPlatformFilter('shopee')">🟠 Shopee</button>
+
+      <button id="plat-lazada" onclick="setPlatformFilter('lazada')">🔵 Lazada</button>
+
+    </div>
+
+
+
+    <div class="filters" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+
+      <button class="active" id="filter-all" onclick="setFilter('all')">Tất cả</button>
+
+      <button id="filter-deal" onclick="setFilter('deal')">🔥 Deal thật</button>
+
+      <button id="filter-fake" onclick="setFilter('fake')">⚠️ Giá ảo</button>
+
+      <button id="filter-error" onclick="setFilter('error')">⚠️ Lỗi quét</button>
+
+      <button id="filter-inactive" onclick="setFilter('inactive')">⏸️ Đã ngưng</button>
+
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+
+        <span style="font-size:12px;color:var(--muted)">Sắp xếp:</span>
+
+        <select id="sort-tracked-select" onchange="setSortTracked(this.value)" style="background:#1e293b;color:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">
+
+          <option value="default">Mặc định</option>
+
+          <option value="price_asc">💰 Giá: Thấp đến cao</option>
+
+          <option value="price_desc">💎 Giá: Cao đến thấp</option>
+
+          <option value="discount">🔥 Giảm sâu nhất</option>
+
+        </select>
+
+        <button id="btn-bulk-delete" class="secondary" onclick="deleteSelected()" style="display:none;color:var(--red);border-color:rgba(239,68,68,0.4);font-weight:600">🗑️ Xóa đã chọn (<span id="selected-count">0</span>)</button>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th style="width:36px;text-align:center"><input type="checkbox" id="check-all" onclick="toggleSelectAll(this)" title="Chọn tất cả" style="cursor:pointer;width:15px;height:15px"></th>
+
+            <th>Sản phẩm</th>
+
+            <th>Sàn</th>
+
+            <th>Giá hiện tại</th>
+
+            <th>Giá mong muốn</th>
+
+            <th>Giảm thật</th>
+
+            <th>Trạng thái</th>
+
+            <th style="text-align:right">Thao tác</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="product-table"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+
+  <div id="tab-megasale-content" style="display:none">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);padding:12px 18px;border-radius:10px">
+
+      <div>
+
+        <div style="font-weight:700;font-size:15px;color:#fff">🔥 Tổng Hợp Deal Giảm Sâu & Siêu Sale</div>
+
+        <div style="color:var(--muted);font-size:12px;margin-top:2px">Tự động phân loại theo ngành hàng và sắp xếp mức giảm giá cao nhất lên đầu</div>
+
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+
+        <button id="btn-purge-junk" class="secondary" onclick="purgeJunkFlashSale()" style="border-color:rgba(239,68,68,0.4);color:#f87171;font-weight:600;padding:7px 14px;font-size:13px" title="Xóa toàn bộ các sản phẩm flash sale rác có giá gốc nhỏ hơn giá trị cài đặt">
+
+          🧹 Dọn dẹp SP rác (&lt; <span id="lbl-junk-min-price">500k</span>)
+
+        </button>
+
+        <button id="btn-crawl-shopee" onclick="crawlMegaSale('shopee')" style="background:#ee4d2d;font-weight:700;padding:7px 14px;font-size:13px">
+
+          ⚡ Cào Shopee 🟠
+
+        </button>
+
+        <button id="btn-crawl-lazada" onclick="crawlMegaSale('lazada')" style="background:#0f146d;border:1px solid rgba(255,255,255,0.2);font-weight:700;padding:7px 14px;font-size:13px">
+
+          ⚡ Cào Lazada 🔵
+
+        </button>
+
+        <button id="btn-crawl-all" onclick="crawlMegaSale('all')" style="background:linear-gradient(135deg, #ef4444, #7c3aed);font-weight:700;padding:7px 16px;font-size:13px">
+
+          🚀 Cào Tất Cả Sàn
+
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="megasale-container"></div>
+
+  </div>
+
+
+
+  <div id="tab-anomalies-content" style="display:none">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:14px 18px;border-radius:10px">
+
+      <div>
+
+        <div style="font-weight:700;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px">
+
+          <span>⚠️ Quản Lý & Duyệt Kèo Nghi Lỗi Giá</span>
+
+          <span class="badge" style="background:#ef4444;color:#fff;font-size:11px">Giảm ≥ 65%</span>
+
+        </div>
+
+        <div style="color:var(--muted);font-size:12px;margin-top:3px">
+
+          Tự động phát hiện khi giá lệch cực sâu so với giá gốc/trung vị. Đã tự động hẹn quét lại sau 2 phút để xác nhận tính ổn định trước khi duyệt đăng kênh.
+
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+
+        <button id="btn-scan-errors" onclick="scanPriceErrors()" style="background:linear-gradient(135deg, #ef4444, #b91c1c);font-weight:700;padding:7px 16px;font-size:13px">
+
+          ⚡ Quét Săn Lỗi Giá Ngay
+
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="anomalies-container"></div>
+
+  </div>
+
+
+
+  <div id="tab-keywords-content" style="display:none">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px">
+
+      <div style="font-weight:700;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:6px">
+
+        <span>🔍 Theo Dõi Sản Phẩm Theo Từ Khóa & Bộ Lọc Nâng Cao</span>
+
+      </div>
+
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.5">
+
+        Tự động tìm kiếm, loại bỏ sản phẩm phụ kiện/rác, phân loại nguồn gốc Việt Nam & quốc tế, và lọc theo 14 dịch vụ & khuyến mãi độc quyền Lazada.
+
+      </p>
+
+
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;margin-bottom:14px">
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Từ khóa sản phẩm:</label>
+
+          <input id="kw-input-name" type="text" placeholder="VD: chuột logitech g102, sạc anker 65w..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px">
+
+        </div>
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Sàn thương mại:</label>
+
+          <select id="kw-filter-platform" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px">
+
+            <option value="all">Tất cả sàn (Shopee & Lazada)</option>
+
+            <option value="shopee">🟠 Shopee</option>
+
+            <option value="lazada">🔵 Lazada</option>
+
+          </select>
+
+        </div>
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Nguồn gốc / Xuất xứ:</label>
+
+          <select id="kw-filter-origin" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px">
+
+            <option value="default" selected>⚡ Mặc định (Tất cả)</option>
+
+            <option value="vn">🇻🇳 Việt Nam (Trong nước)</option>
+
+            <option value="foreign">🌐 Nước ngoài (Quốc tế)</option>
+
+          </select>
+
+        </div>
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Vận chuyển từ (Nơi gửi hàng):</label>
+
+          <select id="kw-filter-ship" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px">
+
+            <option value="default" selected>⚡ Mặc định (Tất cả)</option>
+
+            <option value="vn">🇻🇳 Việt Nam (Trong nước)</option>
+
+            <option value="foreign">🌐 Nước ngoài (Quốc tế)</option>
+
+          </select>
+
+        </div>
+
+        <div>
+
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Loại Shop:</label>
+
+          <select id="kw-filter-shop" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px">
+
+            <option value="any" selected>Bất kỳ shop</option>
+
+            <option value="official">⭐ Chính hãng (Shopee Mall / LazMall)</option>
+
+            <option value="foreign">Shop quốc tế</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+
+      <details style="margin-bottom:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
+
+        <summary style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px">
+
+          <span>🎁 Bộ lọc 14 Dịch Vụ & Khuyến Mãi (Lazada)</span>
+
+          <span style="font-size:11px;color:var(--muted);font-weight:normal">(Bấm để mở rộng/thu gọn)</span>
+
+        </summary>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:8px;margin-top:10px;font-size:12px" id="kw-services-checkboxes">
+
+          <label><input type="checkbox" value="freeship"> 🚚 Freeship / Miễn phí VC</label>
+
+          <label><input type="checkbox" value="lazflash"> ⚡ LazFlash / Chớp nhoáng</label>
+
+          <label><input type="checkbox" value="voucher_max"> 🎫 Voucher Max tích lũy</label>
+
+          <label><input type="checkbox" value="lazmall"> ⭐ LazMall chính hãng</label>
+
+          <label><input type="checkbox" value="tmall"> 🏷️ Tmall trợ giá</label>
+
+          <label><input type="checkbox" value="hoa_toc"> 🚀 Giao hỏa tốc</label>
+
+          <label><input type="checkbox" value="fbl"> 📦 Xử lý bởi Lazada (FBL)</label>
+
+          <label><input type="checkbox" value="sale_cuoi_thang"> 🎉 Sale cuối tháng</label>
+
+          <label><input type="checkbox" value="bundle"> 🛍️ Combo tiết kiệm / Bundle</label>
+
+          <label><input type="checkbox" value="mua3"> 🎁 Mua 3 giảm 20%</label>
+
+          <label><input type="checkbox" value="giao_trong_ngay"> ⏰ Giao trong ngày</label>
+
+          <label><input type="checkbox" value="giao_nhanh_24h"> ⏱️ Giao nhanh 24h</label>
+
+          <label><input type="checkbox" value="cod"> 💵 Thanh toán khi nhận (COD)</label>
+
+          <label><input type="checkbox" value="xu"> 🪙 Hoàn xu / Đổi xu</label>
+
+        </div>
+
+      </details>
+
+
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+
+        <button class="secondary" onclick="triggerKeywordSearch()" id="btn-scan-all-kw">⚡ Quét tìm kiếm ngay</button>
+
+        <button onclick="saveKeyword()" id="btn-save-kw">➕ Thêm từ khóa theo dõi</button>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- Keywords List -->
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+
+        <h3 style="margin:0;font-size:15px;color:#fff">📋 Các từ khóa đang theo dõi</h3>
+
+        <button class="secondary" onclick="loadKeywords()" style="padding:4px 10px;font-size:12px">🔄 Làm mới</button>
+
+      </div>
+
+      <div id="keywords-list-container"></div>
+
+    </div>
+
+
+
+    <!-- Keyword Matching Products Table -->
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+
+        <h3 style="margin:0;font-size:15px;color:#fff">📦 Sản phẩm tìm thấy theo từ khóa</h3>
+
+        <div style="display:flex;align-items:center;gap:8px">
+
+          <label style="font-size:12px;color:var(--muted)">Lọc theo từ khóa:</label>
+
+          <select id="kw-product-filter-select" onchange="loadKeywordProducts(this.value)" style="background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px">
+
+            <option value="">Tất cả từ khóa</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+      <div id="keyword-products-container"></div>
+
+    </div>
+
+  </div>
+
+
+
+  <div id="tab-tmall-content" style="display:none">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;background:rgba(15,20,109,0.25);border:1px solid rgba(15,20,109,0.6);padding:14px 18px;border-radius:10px">
+
+      <div>
+
+        <div style="font-weight:700;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px">
+
+          <span>🏷️ Chuyên Trang Lazada TMALL Trợ Giá</span>
+
+          <span class="badge" style="background:#0f146d;color:#fff;font-size:11px">🔵 TMALL Official</span>
+
+        </div>
+
+        <div style="color:var(--muted);font-size:12px;margin-top:3px">
+
+          Sản phẩm chính hãng LazMall Thiết bị & Phụ kiện điện tử từ kênh TMALL chính thức. Tự động kiểm tra còn hàng / hết hàng và chọn phân loại trợ giá thấp nhất.
+
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+
+        <button id="btn-crawl-tmall" onclick="crawlTmall()" style="background:#0f146d;border:1px solid rgba(255,255,255,0.25);font-weight:700;padding:8px 16px;font-size:13px">
+
+          ⚡ Cào TMALL Trợ Giá Ngay
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="filters" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+
+        <span style="font-size:12px;color:var(--muted)">Sắp xếp:</span>
+
+        <select id="sort-tmall-select" onchange="setSortTmall(this.value)" style="background:#1e293b;color:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">
+
+          <option value="default">Mặc định</option>
+
+          <option value="price_asc">💰 Giá: Thấp đến cao</option>
+
+          <option value="price_desc">💎 Giá: Cao đến thấp</option>
+
+          <option value="discount">🔥 Giảm sâu nhất</option>
+
+        </select>
+
+        <button id="btn-bulk-delete-tmall" class="secondary" onclick="deleteSelectedTmall()" style="display:none;color:var(--red);border-color:rgba(239,68,68,0.4);font-weight:600">🗑️ Xóa đã chọn (<span id="selected-count-tmall">0</span>)</button>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th style="width:36px;text-align:center"><input type="checkbox" id="check-all-tmall" onclick="toggleSelectAllTmall(this)" title="Chọn tất cả" style="cursor:pointer;width:15px;height:15px"></th>
+
+            <th>Sản phẩm</th>
+
+            <th>Giá hiện tại</th>
+
+            <th>Giảm thật</th>
+
+            <th>Trạng thái</th>
+
+            <th style="text-align:right">Thao tác</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="tmall-table"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+
+
+<script>
+
+let allProducts = [];
+
+let currentFilter = 'all';
+
+let currentPlatformFilter = 'all';
+
+let currentCookiePlatform = 'shopee';
+
+let currentMainTab = 'tracked';
+
+let dealMinOriginalPrice = 500000;
+
+
+
+function updateJunkPriceLabel(val) {
+
+  dealMinOriginalPrice = Number(val) || 500000;
+
+  window.dealMinOriginalPrice = dealMinOriginalPrice;
+
+  const lbl = document.getElementById('lbl-junk-min-price');
+
+  if (lbl) {
+
+    lbl.textContent = dealMinOriginalPrice >= 1000000 
+
+      ? (dealMinOriginalPrice / 1000000).toLocaleString('vi-VN') + 'tr'
+
+      : (dealMinOriginalPrice / 1000).toLocaleString('vi-VN') + 'k';
+
+  }
+
+}
+
+
+
+function isMegaSaleDeal(p) {
+
+  const baseVal = Math.max(p.current_list_price || 0, p.current_price || 0);
+
+  const minVal = window.dealMinOriginalPrice || 500000;
+
+  if (baseVal < minVal) return false;
+
+  return (p.source === 'flash_sale') || p.is_deep_deal || (p.discount_percent && p.discount_percent >= 20) || p.deal_status === 'real_deal';
+
+}
+
+
+
+async function purgeJunkFlashSale() {
+
+  const priceDisplay = dealMinOriginalPrice >= 1000000 
+
+    ? (dealMinOriginalPrice / 1000000).toLocaleString('vi-VN') + ' triệu'
+
+    : (dealMinOriginalPrice / 1000).toLocaleString('vi-VN') + 'k';
+
+  if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn toàn bộ sản phẩm Flash Sale rác có giá gốc nhỏ hơn ${priceDisplay}₫ không?\n(Sản phẩm bạn tự theo dõi sẽ được giữ nguyên an toàn).`)) {
+
+    return;
+
+  }
+
+  const btn = document.getElementById('btn-purge-junk');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang dọn dẹp…'; }
+
+  try {
+
+    const r = await fetch('/api/products/purge-junk', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({min_price: dealMinOriginalPrice})
+
+    });
+
+    const d = await r.json();
+
+    if (d.status === 'ok') {
+
+      toast(`🧹 Đã xóa sạch ${d.deleted_count} sản phẩm rác (< ${priceDisplay}₫)!`);
+
+      await loadProducts();
+
+      await loadSummary();
+
+    } else {
+
+      toast('❌ Lỗi: ' + (d.error || 'Không thể dọn dẹp'));
+
+    }
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  } finally {
+
+    if (btn) {
+
+      btn.disabled = false;
+
+      const tagStr = dealMinOriginalPrice >= 1000000 ? (dealMinOriginalPrice / 1000000).toLocaleString('vi-VN') + 'tr' : (dealMinOriginalPrice / 1000).toLocaleString('vi-VN') + 'k';
+
+      btn.innerHTML = `🧹 Dọn dẹp SP rác (&lt; <span id="lbl-junk-min-price">${tagStr}</span>)`;
+
+    }
+
+  }
+
+}
+
+
+
+function setPlatformFilter(plat) {
+
+  currentPlatformFilter = plat;
+
+  document.querySelectorAll('#plat-all, #plat-shopee, #plat-lazada').forEach(b => b.classList.remove('active'));
+
+  const btn = document.getElementById('plat-' + plat);
+
+  if (btn) btn.classList.add('active');
+
+  const kwInput = document.getElementById('kw-input');
+
+  if (kwInput) {
+
+    if (plat === 'lazada') {
+
+      kwInput.placeholder = 'Nhập từ khóa tìm kiếm trên 🔵 Lazada (ví dụ: chuột logitech, bàn phím cơ)…';
+
+    } else if (plat === 'shopee') {
+
+      kwInput.placeholder = 'Nhập từ khóa tìm kiếm trên 🟠 Shopee (ví dụ: chuột logitech, bàn phím cơ)…';
+
+    } else {
+
+      kwInput.placeholder = 'Nhập từ khóa tìm kiếm so sánh liên sàn Shopee & Lazada…';
+
+    }
+
+  }
+
+  renderTable();
+
+}
+
+
+
+function getPlatformBadge(platform) {
+
+  if (platform === 'shopee') {
+
+    return '<span class="badge" style="background:#ee4d2d;color:#fff;font-weight:700;font-size:11px">🟠 Shopee</span>';
+
+  } else if (platform === 'lazada') {
+
+    return '<span class="badge" style="background:#0f146d;color:#fff;font-weight:700;font-size:11px">🔵 Lazada</span>';
+
+  }
+
+  return `<span class="badge" style="background:#475569;color:#fff;font-size:11px">${platform || 'Khác'}</span>`;
+
+}
+
+
+
+function switchMainTab(tab) {
+
+  if (['anomalies', 'keywords', 'tmall'].includes(tab)) {
+
+    tab = 'tracked';
+
+  }
+
+  currentMainTab = tab;
+
+  document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+
+  const btn = document.getElementById('tab-' + tab + '-btn');
+
+  if (btn) btn.classList.add('active');
+
+
+
+  const trackedContent = document.getElementById('tab-tracked-content');
+
+  const megaContent = document.getElementById('tab-megasale-content');
+
+  const anomContent = document.getElementById('tab-anomalies-content');
+
+  const kwContent = document.getElementById('tab-keywords-content');
+
+  const tmallContent = document.getElementById('tab-tmall-content');
+
+
+
+  if (tab === 'tracked') {
+
+    if (trackedContent) trackedContent.style.display = 'block';
+
+    if (megaContent) megaContent.style.display = 'none';
+
+    if (anomContent) anomContent.style.display = 'none';
+
+    if (kwContent) kwContent.style.display = 'none';
+
+    if (tmallContent) tmallContent.style.display = 'none';
+
+    renderTable();
+
+  } else if (tab === 'megasale') {
+
+    if (trackedContent) trackedContent.style.display = 'none';
+
+    if (megaContent) megaContent.style.display = 'block';
+
+    if (anomContent) anomContent.style.display = 'none';
+
+    if (kwContent) kwContent.style.display = 'none';
+
+    if (tmallContent) tmallContent.style.display = 'none';
+
+    renderMegaSale();
+
+  } else if (tab === 'anomalies') {
+
+    if (trackedContent) trackedContent.style.display = 'none';
+
+    if (megaContent) megaContent.style.display = 'none';
+
+    if (anomContent) anomContent.style.display = 'block';
+
+    if (kwContent) kwContent.style.display = 'none';
+
+    if (tmallContent) tmallContent.style.display = 'none';
+
+    loadAnomalies();
+
+  } else if (tab === 'keywords') {
+
+    if (trackedContent) trackedContent.style.display = 'none';
+
+    if (megaContent) megaContent.style.display = 'none';
+
+    if (anomContent) anomContent.style.display = 'none';
+
+    if (kwContent) kwContent.style.display = 'block';
+
+    if (tmallContent) tmallContent.style.display = 'none';
+
+    loadKeywords();
+
+  } else if (tab === 'tmall') {
+
+    if (trackedContent) trackedContent.style.display = 'none';
+
+    if (megaContent) megaContent.style.display = 'none';
+
+    if (anomContent) anomContent.style.display = 'none';
+
+    if (kwContent) kwContent.style.display = 'none';
+
+    if (tmallContent) tmallContent.style.display = 'block';
+
+    renderTmallTable();
+
+  }
+
+}
+
+
+
+let allAnomalies = [];
+
+
+
+async function loadAnomalies() {
+
+  try {
+
+    const r = await fetch('/api/anomalies');
+
+    allAnomalies = await r.json();
+
+    const countEl = document.getElementById('anomalies-tab-count');
+
+    if (countEl) countEl.textContent = allAnomalies.length;
+
+
+
+    const container = document.getElementById('anomalies-container');
+
+    if (!container) return;
+
+
+
+    if (allAnomalies.length === 0) {
+
+      container.innerHTML = `
+
+        <div class="empty-deal-card">
+
+          <div style="font-size:36px;margin-bottom:12px">🛡️</div>
+
+          <h3 style="color:#fff;margin-bottom:8px">Chưa phát hiện sản phẩm lỗi giá nào</h3>
+
+          <p style="font-size:13px;max-width:480px;margin:0 auto 16px;line-height:1.5">
+
+            Hệ thống sẽ tự động bắt các sản phẩm sập giá bất thường (≥ 65%), loại trừ phụ kiện rác và hẹn quét lại sau 2 phút để bạn kiểm tra tại đây.
+
+          </p>
+
+          <button onclick="scanPriceErrors()" style="background:linear-gradient(135deg, #ef4444, #b91c1c);font-weight:700;padding:8px 18px">⚡ Quét Săn Lỗi Giá Ngay</button>
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+
+    const rowsHtml = allAnomalies.map(a => {
+
+      const discPct = Math.round((a.discount || 0) * 100);
+
+      const stageBadge = {
+
+        'confirming': '<span class="badge" style="background:#eab308;color:#000;font-weight:700">⏳ Đang xác minh (2p)</span>',
+
+        'confirmed': '<span class="badge" style="background:#10b981;color:#fff;font-weight:700">✅ Đã xác nhận</span>',
+
+        'rejected': `<span class="badge" style="background:#64748b;color:#fff">❌ Bị hủy (${a.reject_reason || 'giá đã sửa'})</span>`,
+
+        'published': '<span class="badge" style="background:#8b5cf6;color:#fff;font-weight:700">📢 Đã đăng kênh</span>'
+
+      }[a.stage] || `<span class="badge">${a.stage}</span>`;
+
+
+
+      const canPublish = a.stage !== 'published' && a.stage !== 'rejected';
+
+
+
+      return `<tr>
+
+        <td style="max-width:300px">
+
+          <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name}">${a.name}</div>
+
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Phát hiện: ${a.created_at || '—'}</div>
+
+        </td>
+
+        <td>${getPlatformBadge(a.platform)}</td>
+
+        <td style="color:#ef4444;font-size:15px;font-weight:700">${Number(a.price).toLocaleString('vi-VN')}₫</td>
+
+        <td><span class="deal-strikethrough">${Number(a.baseline).toLocaleString('vi-VN')}₫</span></td>
+
+        <td><span class="disc" style="font-weight:700;font-size:13px;background:rgba(239,68,68,0.2);color:#ef4444">-${discPct}%</span></td>
+
+        <td>${stageBadge}</td>
+
+        <td style="text-align:right;white-space:nowrap">
+
+          <a class="buy-link" href="${a.affiliate_url || a.url}" target="_blank" rel="noopener" style="margin-right:6px">Mở mua ↗</a>
+
+          ${canPublish ? `<button onclick="publishAnomaly(${a.id})" style="background:#7c3aed;padding:4px 10px;font-size:11px;margin-right:4px">📢 Đăng Kênh</button>` : ''}
+
+          ${canPublish ? `<button class="secondary" onclick="dismissAnomaly(${a.id})" style="padding:4px 8px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,0.3)">❌</button>` : ''}
+
+        </td>
+
+      </tr>`;
+
+    }).join('');
+
+
+
+    container.innerHTML = `
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Sản phẩm nghi lỗi giá</th>
+
+              <th>Sàn</th>
+
+              <th>Giá lỗi</th>
+
+              <th>Giá gốc chuẩn</th>
+
+              <th>Mức lệch</th>
+
+              <th>Trạng thái xác minh</th>
+
+              <th style="text-align:right">Hành động duyệt</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>${rowsHtml}</tbody>
+
+        </table>
+
+      </div>
+
+    `;
+
+  } catch(e) {
+
+    console.error('loadAnomalies error', e);
+
+  }
+
+}
+
+
+
+async function publishAnomaly(id) {
+
+  if (!confirm('Bạn có chắc muốn duyệt đăng deal này lên kênh Telegram công khai không?')) return;
+
+  try {
+
+    const r = await fetch(`/api/anomalies/${id}/publish`, {method: 'POST'});
+
+    const d = await r.json();
+
+    if (d.status === 'ok') {
+
+      toast('📢 Đã duyệt và phát sóng deal lỗi giá lên Kênh công khai!');
+
+      loadAnomalies();
+
+    } else {
+
+      toast('❌ Lỗi: ' + (d.error || 'Không thể đăng'));
+
+    }
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+async function dismissAnomaly(id) {
+
+  try {
+
+    const r = await fetch(`/api/anomalies/${id}/dismiss`, {method: 'POST'});
+
+    const d = await r.json();
+
+    if (d.status === 'ok') {
+
+      toast('❌ Đã đánh dấu bỏ qua deal này.');
+
+      loadAnomalies();
+
+    }
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+async function scanPriceErrors() {
+
+  const btn = document.getElementById('btn-scan-errors');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang quét săn lỗi giá…'; }
+
+  toast('🔍 Đang kích hoạt quét các từ khóa hàng giá trị cao để săn lỗi giá…');
+
+  try {
+
+    const r = await fetch('/api/scan-price-errors', {method: 'POST'});
+
+    const d = await r.json();
+
+    toast('⚡ ' + (d.message || 'Đã kích hoạt quét!'));
+
+    setTimeout(() => {
+
+      loadAnomalies();
+
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Quét Săn Lỗi Giá Ngay'; }
+
+    }, 8000);
+
+  } catch(e) {
+
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Quét Săn Lỗi Giá Ngay'; }
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+async function loadProducts() {
+
+  const r = await fetch('/api/products');
+
+  allProducts = await r.json();
+
+
+
+  const userProducts = allProducts.filter(p => (p.source || 'user') === 'user');
+
+  const activeUserProducts = userProducts.filter(p => p.active !== 0);
+
+  const deepDeals = allProducts.filter(isMegaSaleDeal);
+
+  const tmallProducts = allProducts.filter(p => {
+
+    const isTmall = (p.source === 'lazada_tmall') || (p.current_campaign === 'TMALL Trợ Giá');
+
+    if (!isTmall) return false;
+
+    const price = p.current_price || 0;
+
+    if (window._tmallMinPrice !== undefined && price < window._tmallMinPrice) return false;
+
+    if (window._tmallMaxPrice !== undefined && price > window._tmallMaxPrice) return false;
+
+    return true;
+
+  });
+
+  const trkCountEl = document.getElementById('tracked-tab-count');
+
+  if (trkCountEl) trkCountEl.textContent = userProducts.length;
+
+  const megaCountEl = document.getElementById('megasale-tab-count');
+
+  if (megaCountEl) megaCountEl.textContent = deepDeals.length;
+
+  const tmallCountEl = document.getElementById('tmall-tab-count');
+
+  if (tmallCountEl) tmallCountEl.textContent = tmallProducts.length;
+
+
+
+  if (currentMainTab === 'tracked') {
+
+    renderTable();
+
+  } else if (currentMainTab === 'megasale') {
+
+    renderMegaSale();
+
+  } else if (currentMainTab === 'tmall') {
+
+    renderTmallTable();
+
+  }
+
+}
+
+
+
+function renderMegaSale() {
+
+  const deepDeals = allProducts.filter(isMegaSaleDeal);
+
+  const container = document.getElementById('megasale-container');
+
+  if (!container) return;
+
+
+
+  if (deepDeals.length === 0) {
+
+    container.innerHTML = `
+
+      <div class="empty-deal-card">
+
+        <div style="font-size:36px;margin-bottom:12px">🏷️</div>
+
+        <h3 style="color:#fff;margin-bottom:8px">Chưa có sản phẩm giảm giá sâu nào</h3>
+
+        <p style="font-size:13px;max-width:480px;margin:0 auto 16px;line-height:1.5">
+
+          Hệ thống sẽ tự động quét và gom nhóm các sản phẩm đạt tiêu chuẩn <b>Deal thật</b> hoặc <b>Giảm ≥ 20-30%</b> vào đây trong các đợt Siêu Sale / Flash Sale.
+
+        </p>
+
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+
+          <button onclick="crawlMegaSale('shopee')" style="background:#ee4d2d;font-weight:700;padding:8px 16px">⚡ Cào Shopee 🟠</button>
+
+          <button onclick="crawlMegaSale('lazada')" style="background:#0f146d;border:1px solid rgba(255,255,255,0.2);font-weight:700;padding:8px 16px">⚡ Cào Lazada 🔵</button>
+
+          <button onclick="crawlMegaSale('all')" style="background:linear-gradient(135deg, #ef4444, #7c3aed);font-weight:700;padding:8px 18px">🚀 Cào Tất Cả Sàn</button>
+
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+
+  // Group by top_category
+
+  const groups = {};
+
+  for (const p of deepDeals) {
+
+    const cat = p.top_category || 'Khác';
+
+    if (!groups[cat]) groups[cat] = [];
+
+    groups[cat].push(p);
+
+  }
+
+
+
+  // Sort each category's items by discount_percent descending
+
+  for (const cat in groups) {
+
+    groups[cat].sort((a, b) => (b.discount_percent || 0) - (a.discount_percent || 0));
+
+  }
+
+
+
+  // Sort categories by highest discount in category
+
+  const sortedCategories = Object.keys(groups).sort((a, b) => {
+
+    const maxA = Math.max(...groups[a].map(x => x.discount_percent || 0));
+
+    const maxB = Math.max(...groups[b].map(x => x.discount_percent || 0));
+
+    return maxB - maxA;
+
+  });
+
+
+
+  let html = '';
+
+  for (const cat of sortedCategories) {
+
+    const items = groups[cat];
+
+    const maxDisc = Math.max(...items.map(x => x.discount_percent || 0));
+
+    const maxDiscBadge = maxDisc > 0 ? `<span class="badge-hot-discount">🔥 Giảm tới ${maxDisc}%</span>` : '';
+
+
+
+    html += `
+
+      <div class="category-section">
+
+        <div class="category-header">
+
+          <div class="category-title">
+
+            <span>📁 ${cat}</span>
+
+            <span class="tab-count">${items.length} deal</span>
+
+          </div>
+
+          <div class="category-meta">
+
+            ${maxDiscBadge}
+
+          </div>
+
+        </div>
+
+        <div class="table-wrap" style="border:none;border-radius:0">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>Sản phẩm</th>
+
+                <th>Sàn</th>
+
+                <th>Giá Sale hiện tại</th>
+
+                <th>Giá gốc / Giá niêm yết</th>
+
+                <th>Mức giảm</th>
+
+                <th>Rating</th>
+
+                <th>Đợt Sale</th>
+
+                <th style="text-align:right">Thao tác</th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              ${items.map(p => {
+
+                const discVal = p.discount_percent || 0;
+
+                const discBadge = discVal > 0 ? `<span class="disc" style="font-weight:700;font-size:13px">-${discVal}%</span>` : '—';
+
+                const statusBadge = p.deal_status === 'real_deal' 
+
+                  ? '<span class="status-badge real_deal" style="margin-left:4px;font-size:10px">Deal thật</span>' : '';
+
+                const camp = p.current_campaign ? `<span class="badge" style="background:#e11d48;font-size:11px">${p.current_campaign}</span>` : '<span style="color:var(--muted)">Ngày thường</span>';
+
+                const oldPrice = p.current_list_price ? p.current_list_price.toLocaleString('vi-VN') + '₫' : (p.current_price ? (p.current_price * 1.3).toLocaleString('vi-VN') + '₫' : '—');
+
+                const catSub = p.category && p.category.includes(' > ') ? p.category.split(' > ').slice(1).join(' > ') : '';
+
+                const catHtml = catSub ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${catSub}</div>` : '';
+
+
+
+                return `<tr>
+
+                  <td style="max-width:320px">
+
+                    <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.name || ''}">${p.name}</div>
+
+                    ${catHtml}
+
+                  </td>
+
+                  <td>${getPlatformBadge(p.platform)}</td>
+
+                  <td class="price" style="color:var(--green);font-size:15px;font-weight:700">
+
+                    ${p.current_price ? p.current_price.toLocaleString('vi-VN') + '₫' : '—'}
+
+                    ${p.current_voucher_code ? `
+
+                      <div style="margin-top:3px">
+
+                        <span class="badge" style="background:#7c3aed;color:#fff;font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px" onclick="copyVoucher('${p.current_voucher_code}')" title="Nhấp để copy mã voucher">🎫 ${p.current_voucher_code} (-${Math.round(p.current_voucher_discount).toLocaleString('vi-VN')}₫)</span>
+
+                        ${p.current_final_price && p.current_final_price < p.current_price ? `<div style="font-size:11px;color:#10b981;font-weight:700;margin-top:1px">Sau mã: ${Math.round(p.current_final_price).toLocaleString('vi-VN')}₫</div>` : ''}
+
+                      </div>` : ''}
+
+                  </td>
+
+                  <td>
+
+                    <span class="deal-strikethrough">${oldPrice}</span>
+
+                  </td>
+
+                  <td>
+
+                    ${discBadge} ${statusBadge}
+
+                  </td>
+
+                  <td>${p.rating ? '⭐ ' + Number(p.rating).toFixed(1) : '—'}</td>
+
+                  <td>${camp}</td>
+
+                  <td style="text-align:right;white-space:nowrap">
+
+                    ${p.source === 'user' 
+
+                      ? `<button class="secondary" disabled style="opacity:0.7;margin-right:6px;padding:3px 8px;font-size:11px">✅ Đang theo dõi</button>` 
+
+                      : `<button class="secondary" onclick="trackDeal('${p.url}', ${p.current_final_price || p.current_price || 0})" style="margin-right:6px;padding:3px 8px;font-size:11px">➕ Theo dõi</button>`}
+
+                    <a class="buy-link" href="${p.url}" target="_blank" rel="noopener" style="font-weight:600;background:rgba(108,99,255,0.15);padding:4px 10px;border-radius:6px">Săn deal ↗</a>
+
+                    <button class="secondary" onclick="deleteProduct(${p.id})" title="Xóa khỏi danh sách" style="margin-left:6px;padding:3px 7px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,0.3)">🗑️</button>
+
+                  </td>
+
+                </tr>`;
+
+              }).join('')}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+
+
+  container.innerHTML = html;
+
+}
+
+
+
+async function crawlMegaSale(platform = 'all') {
+
+  const btns = [
+
+    document.getElementById('btn-crawl-shopee'),
+
+    document.getElementById('btn-crawl-lazada'),
+
+    document.getElementById('btn-crawl-all')
+
+  ].filter(Boolean);
+
+  btns.forEach(b => { b.disabled = true; });
+
+
+
+  const platLabel = platform === 'shopee' ? 'Shopee 🟠' : (platform === 'lazada' ? 'Lazada 🔵' : 'Tất cả các sàn');
+
+  toast(`🔍 Đang cào các deal giảm sâu từ ${platLabel}…`);
+
+  try {
+
+    await fetch('/api/crawl-megasale', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({limit: 30, platform: platform})
+
+    });
+
+    setTimeout(async () => {
+
+      await loadProducts();
+
+      btns.forEach(b => { b.disabled = false; });
+
+      toast(`✅ Đã cập nhật danh sách Deal Siêu Sale từ ${platLabel}!`);
+
+    }, 7000);
+
+  } catch (e) {
+
+    btns.forEach(b => { b.disabled = false; });
+
+    toast('❌ Lỗi khi cào deal: ' + e);
+
+  }
+
+}
+
+
+
+async function trackDeal(url, currentPrice) {
+
+  let promptMsg = 'Nhập giá mong muốn (₫) để nhận thông báo Telegram khi giá giảm về mức này:\n(Gợi ý: bạn có thể để trống hoặc nhấn OK để theo dõi mà không đặt giá)';
+
+  let defaultVal = '';
+
+  if (currentPrice && currentPrice > 0) {
+
+    const suggested = Math.round((currentPrice * 0.9) / 1000) * 1000;
+
+    promptMsg = `Giá hiện tại: ${Number(currentPrice).toLocaleString('vi-VN')}₫.\nNhập giá mong muốn (₫) để nhận thông báo Telegram khi giá ≤ mức này:\n(Để trống nếu chỉ muốn theo dõi không đặt giá):`;
+
+    defaultVal = suggested > 0 ? suggested : '';
+
+  }
+
+  const input = prompt(promptMsg, defaultVal);
+
+  if (input === null) return;
+
+  
+
+  let targetPrice = null;
+
+  const cleaned = input.replace(/[.,\sđ₫]/g, '').trim();
+
+  if (cleaned !== '') {
+
+    const num = parseFloat(cleaned);
+
+    if (!isNaN(num) && num > 0) {
+
+      targetPrice = num;
+
+    }
+
+  }
+
+
+
+  try {
+
+    const r = await fetch('/api/products', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({ url, target_price: targetPrice })
+
+    });
+
+    const d = await r.json();
+
+    if (d.error) {
+
+      toast('❌ ' + d.error);
+
+      return;
+
+    }
+
+    const targetMsg = targetPrice ? ` (Giá mong muốn: ${targetPrice.toLocaleString('vi-VN')}₫)` : '';
+
+    toast(`✅ Đã thêm sản phẩm vào Tab Theo Dõi!${targetMsg}`);
+
+    await loadProducts();
+
+    await loadSummary();
+
+    if (typeof loadKeywordProducts === 'function') {
+
+      loadKeywordProducts();
+
+    }
+
+  } catch (e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+async function loadSummary() {
+
+  const r = await fetch('/api/summary');
+
+  const d = await r.json();
+
+  if (d.tmall_min_price !== undefined) window._tmallMinPrice = d.tmall_min_price;
+
+  if (d.tmall_max_price !== undefined) window._tmallMaxPrice = d.tmall_max_price;
+
+  const camp = d.active_campaign ? `<span style="color:#f43f5e">🔥 ${d.active_campaign}</span>` : 'Ngày thường';
+
+  document.getElementById('stats').innerHTML = `
+
+    <div class="stat-card"><div class="label">Deal thật hôm nay</div><div class="value green">${d.deal_count}</div></div>
+
+    <div class="stat-card"><div class="label">Đợt Sale hiện tại</div><div class="value" style="font-size:16px;line-height:2">${camp}</div></div>
+
+    <div class="stat-card"><div class="label">Đang theo dõi</div><div class="value">${d.total_products} <span style="font-size:12px;font-weight:normal;color:var(--muted)">(🟠 ${d.shopee_count || 0} / 🔵 ${d.lazada_count || 0})</span></div></div>
+
+    <div class="stat-card"><div class="label">Tần suất theo dõi</div><div class="value" style="font-size:18px;line-height:1.8">${d.scan_interval_min || 60} <span style="font-size:13px;color:var(--muted)">phút</span></div></div>
+
+    <div class="stat-card"><div class="label">Lần quét cuối</div><div class="value" style="font-size:14px;line-height:1.6">${d.last_scan ? d.last_scan.ts : 'Chưa quét'}</div></div>
+
+  `;
+
+  const badge = document.getElementById('last-scan-badge');
+
+  badge.textContent = d.last_scan ? `✓ ${d.last_scan.ok} ok / ${d.last_scan.fail} lỗi` : 'Chưa quét';
+
+}
+
+
+
+function setFilter(f) {
+
+  currentFilter = f;
+
+  document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('filter-' + f).classList.add('active');
+
+  renderTable();
+
+}
+
+
+
+let currentSortTracked = 'default';
+
+
+
+function setSortTracked(sortKey) {
+
+  currentSortTracked = sortKey;
+
+  renderTable();
+
+}
+
+
+
+function renderTable() {
+
+  const userProducts = allProducts.filter(p => (p.source || 'user') === 'user');
+
+  let filtered = userProducts.filter(p => {
+
+    if (currentPlatformFilter !== 'all' && p.platform !== currentPlatformFilter) return false;
+
+    if (currentFilter === 'deal') return p.deal_status === 'real_deal' && p.active !== 0;
+
+    if (currentFilter === 'fake') return p.deal_status === 'fake_list_price' && p.active !== 0;
+
+    if (currentFilter === 'error') return p.fail_count && p.fail_count > 0;
+
+    if (currentFilter === 'inactive') return p.active === 0;
+
+    return true;
+
+  });
+
+
+
+  // Calculate lowest price among valid tracked products
+
+  const validPrices = filtered.map(p => p.current_price).filter(p => p && p > 0);
+
+  const minPrice = validPrices.length >= 2 ? Math.min(...validPrices) : null;
+
+
+
+  if (currentSortTracked === 'price_asc') {
+
+    filtered.sort((a, b) => (a.current_price || 999999999) - (b.current_price || 999999999));
+
+  } else if (currentSortTracked === 'price_desc') {
+
+    filtered.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+
+  } else if (currentSortTracked === 'discount') {
+
+    filtered.sort((a, b) => (b.discount_percent || 0) - (a.discount_percent || 0));
+
+  } else {
+
+    // Default: newest first (highest ID on top)
+
+    filtered.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+  }
+
+
+
+  const tbody = document.getElementById('product-table');
+
+  tbody.innerHTML = filtered.map(p => {
+
+    const isLowest = minPrice !== null && p.current_price === minPrice;
+
+    const lowestBadge = isLowest ? '<span class="badge" style="background:#059669;color:#fff;font-size:10px;margin-left:4px;font-weight:700">🏷️ Giá thấp nhất</span>' : '';
+
+    const disc = p.deal_status === 'real_deal' && p.current_price && p.current_list_price
+
+      ? Math.round((1 - p.current_price / p.current_list_price) * 100) : null;
+
+    const statusLabel = { real_deal: '🔥 Deal thật', fake_list_price: '⚠️ Giá ảo',
+
+      insufficient_history: '⏳ Đang thu thập', normal: 'Bình thường' };
+
+    const campBadge = p.current_campaign ? `<span class="badge" style="background:#e11d48;font-size:10px;margin-left:4px">${p.current_campaign}</span>` : '';
+
+    const hasMultipleVariants = (p.variants_count > 1) && p.variant_name && !p.variant_name.startsWith('Phân loại ');
+
+    const variantHtml = hasMultipleVariants
+
+      ? `<div style="font-size:11px;color:#38bdf8;margin-top:2px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.variant_name}">🏷️ Phân loại: <span style="color:var(--text)">${p.variant_name}</span></div>`
+
+      : '';
+
+    const targetDisplay = p.target_price ? p.target_price.toLocaleString('vi-VN') + '₫' : 'Chưa đặt';
+
+    const reachedTarget = p.target_price && p.current_price && p.current_price <= p.target_price;
+
+    const targetBadge = reachedTarget ? '<div class="status-badge real_deal" style="font-size:10px;margin-top:3px">🎯 Đạt giá!</div>' : '';
+
+
+
+    const displayName = (p.clean_name || p.name) || `⏳ Đang lấy thông tin… (SP #${p.id})`;
+
+
+
+    const isOutOfStock = p.is_out_of_stock || p.current_stock === 0;
+
+
+
+    return `<tr>
+
+      <td style="text-align:center"><input type="checkbox" class="prod-checkbox" value="${p.id}" onchange="onRowCheckChange()" style="cursor:pointer;width:15px;height:15px"></td>
+
+      <td style="max-width:280px" title="${p.name || ''}">
+
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${displayName} ${campBadge}</div>
+
+        ${variantHtml}
+
+      </td>
+
+      <td>${getPlatformBadge(p.platform)}</td>
+
+      <td class="price" style="${isLowest ? 'color:#10b981;font-weight:800;font-size:15px' : ''}">
+
+        ${p.current_price ? p.current_price.toLocaleString('vi-VN') + '₫' : '—'}
+
+        ${lowestBadge}
+
+        ${p.current_voucher_code ? `
+
+          <div style="margin-top:3px">
+
+            <span class="badge" style="background:#7c3aed;color:#fff;font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px" onclick="copyVoucher('${p.current_voucher_code}')" title="Nhấp để copy mã voucher">🎫 ${p.current_voucher_code} (-${Math.round(p.current_voucher_discount).toLocaleString('vi-VN')}₫)</span>
+
+            ${p.current_final_price && p.current_final_price < p.current_price ? `<div style="font-size:11px;color:#10b981;font-weight:700;margin-top:1px">Sau mã: ${Math.round(p.current_final_price).toLocaleString('vi-VN')}₫</div>` : ''}
+
+          </div>` : ''}
+
+      </td>
+
+      <td>
+
+        <div style="display:flex;align-items:center;gap:6px">
+
+          <span style="font-weight:600;color:${p.target_price ? '#38bdf8' : 'var(--muted)'}">${targetDisplay}</span>
+
+          <button class="secondary" onclick="editTargetPrice(${p.id}, ${p.target_price || 0})" title="Cài đặt giá mong muốn" style="padding:2px 6px;font-size:11px">✏️</button>
+
+        </div>
+
+        ${targetBadge}
+
+      </td>
+
+      <td>${disc !== null ? `<span class="disc">${disc}%</span>` : '—'}</td>
+
+      <td>
+
+        ${p.active === 0
+
+          ? '<span class="status-badge" style="background:rgba(107,114,128,0.2);color:#9ca3af;font-size:11px;font-weight:700">⏸️ Đã ngưng</span>'
+
+          : (isOutOfStock 
+
+            ? '<span class="status-badge" style="background:rgba(239,68,68,0.18);color:#ef4444;font-size:11px;font-weight:700">🔴 Hết hàng</span>' 
+
+            : '<span class="status-badge" style="background:rgba(16,185,129,0.18);color:#10b981;font-size:11px;font-weight:700">🟢 Còn hàng</span>'
+
+          )
+
+        }
+
+        ${p.fail_count && p.fail_count > 0 && p.active !== 0 ? `<div style="font-size:10px;color:#f59e0b;margin-top:2px;font-weight:600">⚠️ Lỗi quét (${p.fail_count} lần)</div>` : ''}
+
+      </td>
+
+      <td style="text-align:right;white-space:nowrap">
+
+        ${p.active === 0 ? `
+
+          <button class="secondary" onclick="reactivateProduct(${p.id})" title="Khôi phục và tiếp tục theo dõi" style="margin-right:6px;padding:2px 7px;font-size:11px;color:#10b981;border-color:rgba(16,185,129,0.3)">♻️ Khôi phục</button>
+
+        ` : `
+
+          <button class="secondary" onclick="compareShops(${p.id})" title="So giá các shop khác trên Shopee" style="margin-right:6px;padding:2px 7px;font-size:11px">🔍 So giá</button>
+
+        `}
+
+        <a class="buy-link" href="${p.url}" target="_blank" rel="noopener" style="margin-right:8px">Xem ↗</a>
+
+        <button class="secondary" onclick="deleteProduct(${p.id})" title="Xóa và ngừng theo dõi" style="padding:2px 7px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,0.3)">🗑️ Xóa</button>
+
+      </td>
+
+    </tr>`;
+
+  }).join('');
+
+  onRowCheckChange();
+
+}
+
+
+
+async function compareShops(id) {
+
+  toast('🔍 Đang tìm và so sánh giá giữa các shop trên Shopee…');
+
+  try {
+
+    const r = await fetch(`/api/products/${id}/compare`, {method: 'POST'});
+
+    const d = await r.json();
+
+    if (d.status === 'found_cheaper') {
+
+      const cp = d.cheaper_product;
+
+      const priceStr = Math.round(cp.final_price || cp.price).toLocaleString('vi-VN') + '₫';
+
+      const saveStr = Math.round(d.savings).toLocaleString('vi-VN') + '₫';
+
+      const vStr = cp.voucher_code ? `\n🎫 Có voucher: ${cp.voucher_code} (-${Math.round(cp.voucher_discount).toLocaleString('vi-VN')}₫)` : '';
+
+      const conf = confirm(
+
+        `🎉 TÌM THẤY SHOP BÁN RẺ HƠN!\n\n` +
+
+        `📦 Tên: ${cp.name}\n` +
+
+        `💰 Giá sau mã: ${priceStr}\n` +
+
+        `💸 Tiết kiệm: ${saveStr} (-${d.savings_pct}%)${vStr}\n\n` +
+
+        `👉 Bạn có muốn thêm shop này vào danh sách theo dõi ngay không?`
+
+      );
+
+      if (conf) {
+
+        await trackDeal(cp.url);
+
+      }
+
+    } else if (d.status === 'lowest_already') {
+
+      alert('🎉 Chúc mừng! Shop bạn đang theo dõi hiện có giá tốt nhất trên Shopee!');
+
+    } else {
+
+      toast('ℹ️ ' + (d.message || 'Không tìm thấy shop thay thế còn hàng'));
+
+    }
+
+  } catch (e) {
+
+    toast('❌ Lỗi khi so giá: ' + e);
+
+  }
+
+}
+
+
+
+async function addProduct() {
+
+  const url = document.getElementById('url-input').value.trim();
+
+  if (!url) return;
+
+  const r = await fetch('/api/products', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+
+  const d = await r.json();
+
+  if (d.error) { toast('❌ ' + d.error); return; }
+
+  toast('✅ Đã thêm: ' + d.platform + ' #' + d.id);
+
+  document.getElementById('url-input').value = '';
+
+  loadProducts();
+
+  fetch('/api/scan', { method: 'POST' }).then(() => {
+
+    setTimeout(loadProducts, 4000);
+
+  });
+
+}
+
+
+
+async function searchKeyword(lowestOnly = true) {
+
+  const input = document.getElementById('kw-input');
+
+  const btn = document.getElementById('kw-btn');
+
+  const btnAll = document.getElementById('kw-all-btn');
+
+  const keyword = input.value.trim();
+
+  if (!keyword) { toast('⚠️ Vui lòng nhập từ khóa'); return; }
+
+  
+
+  if (btn) btn.disabled = true;
+
+  if (btnAll) btnAll.disabled = true;
+
+  if (lowestOnly && btn) btn.textContent = '⏳ Đang tìm giá thấp nhất…';
+
+  if (!lowestOnly && btnAll) btnAll.textContent = '⏳ Đang quét Top 5…';
+
+
+
+  const platLabel = currentPlatformFilter === 'lazada' ? '🔵 Lazada' : (currentPlatformFilter === 'shopee' ? '🟠 Shopee' : 'liên sàn Shopee & Lazada');
+
+  toast(lowestOnly ? `🔍 Đang quét & so sánh [${platLabel}] để tìm giá thấp nhất…` : `🔍 Đang tìm top 5 shop bán chạy trên [${platLabel}]…`);
+
+  try {
+
+    const r = await fetch('/api/search', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({keyword, limit: 5, lowest_only: lowestOnly, platform: currentPlatformFilter})
+
+    });
+
+    const d = await r.json();
+
+    if (d.added_count > 0) {
+
+      if (lowestOnly && d.best_deal && d.best_deal.price) {
+
+        const platBadge = d.best_deal.platform === 'lazada' ? '[Lazada] ' : (d.best_deal.platform === 'shopee' ? '[Shopee] ' : '');
+
+        const vInfo = d.best_deal.voucher_code ? ` (Mã: ${d.best_deal.voucher_code} giảm còn ${Number(d.best_deal.final_price).toLocaleString('vi-VN')}₫)` : '';
+
+        toast(`🏆 Đã tìm thấy giá thấp nhất: ${platBadge}${Number(d.best_deal.price).toLocaleString('vi-VN')}₫${vInfo}! Đã đưa vào theo dõi.`);
+
+      } else {
+
+        toast(`✅ Đã thêm ${d.added_count} sản phẩm [${platLabel}] vào theo dõi!`);
+
+      }
+
+      input.value = '';
+
+      await loadProducts();
+
+      await loadSummary();
+
+      for (const delay of [2500, 5000, 8000]) {
+
+        setTimeout(async () => {
+
+          await loadProducts();
+
+          await loadSummary();
+
+        }, delay);
+
+      }
+
+    } else {
+
+      toast(`⚠️ Không tìm thấy sản phẩm phù hợp trên [${platLabel}]`);
+
+    }
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  } finally {
+
+    if (btn) {
+
+      btn.disabled = false;
+
+      btn.textContent = '🎯 Săn giá thấp nhất';
+
+    }
+
+    if (btnAll) {
+
+      btnAll.disabled = false;
+
+      btnAll.textContent = 'So sánh Top 5';
+
+    }
+
+  }
+
+}
+
+
+
+
+
+async function triggerScan() {
+
+  toast('⏳ Đang kích hoạt quét sản phẩm theo dõi…');
+
+  try {
+
+    const r = await fetch('/api/scan', { method: 'POST' });
+
+    const d = await r.json();
+
+    if (d.status === 'in_progress') {
+
+      toast('⚠️ Quá trình quét đang chạy trong nền, vui lòng đợi.');
+
+    } else {
+
+      toast('⚡ Đã kích hoạt quét sản phẩm theo dõi. Kết quả sẽ cập nhật sau giây lát.');
+
+    }
+
+  } catch (e) {
+
+    toast('❌ Lỗi kích hoạt quét: ' + e.message);
+
+  }
+
+  setTimeout(() => { loadSummary(); loadProducts(); }, 4000);
+
+}
+
+
+
+function copyVoucher(code) {
+
+  navigator.clipboard.writeText(code).then(() => {
+
+    toast(`📋 Đã copy mã giảm giá: ${code}`);
+
+  }).catch(() => {
+
+    toast(`🎫 Mã giảm giá: ${code}`);
+
+  });
+
+}
+
+
+
+function toast(msg) {
+
+  const t = document.getElementById('toast');
+
+  t.textContent = msg;
+
+  t.style.display = 'block';
+
+  setTimeout(() => { t.style.display = 'none'; }, 4000);
+
+}
+
+
+
+async function checkSession() {
+
+  const r = await fetch('/api/session');
+
+  const d = await r.json();
+
+  const elShopee = document.getElementById('session-status');
+
+  const elLazada = document.getElementById('session-lzd-status');
+
+  const btn = document.getElementById('login-btn');
+
+
+
+  const shp = d.shopee || {valid: d.valid, has_spc_ec: d.has_spc_ec};
+
+  if (shp.valid && shp.has_spc_ec) {
+
+    elShopee.textContent = '✅ Shopee: OK';
+
+    elShopee.className = 'valid';
+
+    elShopee.style.background = '';
+
+    if (btn) btn.style.display = 'none';
+
+  } else if (shp.valid && !shp.has_spc_ec) {
+
+    elShopee.textContent = '⚠️ Shopee: Thiếu SPC_EC';
+
+    elShopee.className = 'invalid';
+
+    elShopee.style.background = '#854d0e';
+
+    if (btn) btn.style.display = '';
+
+  } else {
+
+    elShopee.textContent = '⚠️ Shopee: Chưa login';
+
+    elShopee.className = 'invalid';
+
+    elShopee.style.background = '';
+
+    if (btn) btn.style.display = '';
+
+  }
+
+
+
+  const lzd = d.lazada || {valid: false};
+
+  if (lzd.valid) {
+
+    elLazada.textContent = '✅ Lazada: OK';
+
+    elLazada.className = 'valid';
+
+    elLazada.style.background = 'rgba(15,20,109,0.3)';
+
+    elLazada.style.color = '#93c5fd';
+
+  } else {
+
+    elLazada.textContent = '⚠️ Lazada: Chưa nạp';
+
+    elLazada.className = 'invalid';
+
+    elLazada.style.background = '';
+
+    elLazada.style.color = '';
+
+  }
+
+}
+
+
+
+let _loginPollId = null;
+
+async function triggerLogin() {
+
+  const btn = document.getElementById('login-btn');
+
+  btn.disabled = true;
+
+  btn.textContent = '⏳ Đang mở Chrome…';
+
+  toast('🔑 Đang mở Chrome để đăng nhập. Vui lòng quét QR trên điện thoại...');
+
+  await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({platform:'shopee'}) });
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  _loginPollId = setInterval(async () => {
+
+    const r = await fetch('/api/login/status');
+
+    const d = await r.json();
+
+    if (!d.running && d.result !== null) {
+
+      clearInterval(_loginPollId);
+
+      if (d.result) {
+
+        toast('✅ Đăng nhập thành công! Hệ thống đã lưu session.');
+
+      } else {
+
+        toast('❌ Đăng nhập thất bại hoặc hết thời gian chờ.');
+
+      }
+
+      btn.disabled = false;
+
+      btn.textContent = '🔑 Đăng nhập Shopee';
+
+      checkSession();
+
+    }
+
+  }, 2000);
+
+}
+
+
+
+function openCookieModal(platform = 'shopee') {
+
+  currentCookiePlatform = platform;
+
+  const titleEl = document.getElementById('cookie-modal-title');
+
+  const descEl = document.getElementById('cookie-modal-desc');
+
+  if (platform === 'lazada') {
+
+    if (titleEl) titleEl.textContent = '📋 Nhập Cookies Lazada';
+
+    if (descEl) descEl.innerHTML = 'Dán chuỗi cookies từ trình duyệt Lazada (dạng <code>lzd_sid=...; x5sec=...</code> hoặc JSON xuất từ extension Cookie-Editor).<br>👉 Giúp Playwright nạp session vượt qua kiểm tra bảo mật Lazada.';
+
+  } else {
+
+    if (titleEl) titleEl.textContent = '📋 Nhập Cookies Shopee';
+
+    if (descEl) descEl.innerHTML = 'Dán chuỗi cookies từ trình duyệt Shopee (dạng <code>SPC_EC=...; SPC_ST=...; SPC_U=...</code> hoặc JSON xuất từ extension Cookie-Editor).<br>👉 Bắt buộc phải có <b>SPC_EC</b> để vượt qua kiểm tra bảo mật Shopee.';
+
+  }
+
+  document.getElementById('cookie-textarea').value = '';
+
+  document.getElementById('cookie-modal').style.display = 'flex';
+
+}
+
+function closeCookieModal() {
+
+  document.getElementById('cookie-modal').style.display = 'none';
+
+}
+
+async function saveCookies() {
+
+  const btn = document.getElementById('save-cookies-btn');
+
+  const val = document.getElementById('cookie-textarea').value.trim();
+
+  if (!val) { toast('⚠️ Vui lòng dán chuỗi cookie'); return; }
+
+  if (btn) {
+
+    btn.disabled = true;
+
+    btn.textContent = '⏳ Đang lưu & nạp...';
+
+  }
+
+  try {
+
+    const controller = new AbortController();
+
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const r = await fetch('/api/cookies', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({cookies: val, platform: currentCookiePlatform}),
+
+      signal: controller.signal
+
+    });
+
+    clearTimeout(timeoutId);
+
+    const d = await r.json();
+
+    if (r.ok) {
+
+      closeCookieModal();
+
+      toast(`✅ Đã nạp thành công ${d.count} cookies cho sàn ${currentCookiePlatform.toUpperCase()}!`);
+
+      checkSession();
+
+    } else {
+
+      toast(`❌ Lỗi: ${d.error || 'Không thể lưu cookies'}`);
+
+    }
+
+  } catch (err) {
+
+    if (err.name === 'AbortError') {
+
+      toast('⚠️ Yêu cầu quá 15s (trình duyệt đang bận quét). Cookies đã được lưu vào đĩa, vui lòng làm mới lại!');
+
+      checkSession();
+
+    } else {
+
+      toast(`❌ Lỗi kết nối: ${err.message || err}`);
+
+    }
+
+  } finally {
+
+    if (btn) {
+
+      btn.disabled = false;
+
+      btn.textContent = 'Lưu & Kích hoạt';
+
+    }
+
+  }
+
+}
+
+
+
+async function editTargetPrice(pid, currentVal) {
+
+  const currentStr = currentVal > 0 ? currentVal : '';
+
+  const input = prompt('Nhập giá mong muốn (VNĐ) cho sản phẩm này:\n(Hệ thống sẽ báo về Telegram khi giá ≤ mức này. Để trống hoặc nhập 0 để hủy):', currentStr);
+
+  if (input === null) return;
+
+  const cleaned = input.replace(/[.,\sđ₫]/g, '').trim();
+
+  const num = cleaned === '' ? null : parseFloat(cleaned);
+
+  if (num !== null && (isNaN(num) || num <= 0)) {
+
+    toast('❌ Giá mong muốn phải là số lớn hơn 0');
+
+    return;
+
+  }
+
+  const r = await fetch(`/api/products/${pid}/target_price`, {
+
+    method: 'PATCH',
+
+    headers: {'Content-Type': 'application/json'},
+
+    body: JSON.stringify({target_price: num})
+
+  });
+
+  if (r.ok) {
+
+    toast(num ? `🎯 Đã lưu giá mong muốn: ${num.toLocaleString('vi-VN')}₫` : '✅ Đã xóa giá mong muốn');
+
+    loadProducts();
+
+  } else {
+
+    const d = await r.json();
+
+    toast('❌ Lỗi: ' + (d.error || 'Không thể lưu'));
+
+  }
+
+}
+
+
+
+async function deleteProduct(pid) {
+
+  const p = allProducts.find(x => x.id === pid);
+
+  const name = p ? p.name : '#' + pid;
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa và ngừng theo dõi sản phẩm:\n"${name}"?`)) return;
+
+  const r = await fetch(`/api/products/${pid}`, { method: 'DELETE' });
+
+  if (r.ok) {
+
+    toast('🗑️ Đã xóa sản phẩm khỏi danh sách theo dõi');
+
+    loadProducts();
+
+    loadSummary();
+
+  } else {
+
+    toast('❌ Không thể xóa sản phẩm');
+
+  }
+
+}
+
+
+
+async function reactivateProduct(pid) {
+
+  try {
+
+    const r = await fetch(`/api/products/${pid}/reactivate`, { method: 'POST' });
+
+    const d = await r.json();
+
+    if (d.status === 'ok') {
+
+      toast('♻️ Đã khôi phục sản phẩm vào danh sách theo dõi!');
+
+      loadProducts();
+
+      loadSummary();
+
+    } else {
+
+      toast('❌ Lỗi: ' + (d.error || 'Không thể khôi phục'));
+
+    }
+
+  } catch (e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+function toggleSelectAll(master) {
+
+  const cbs = document.querySelectorAll('.prod-checkbox');
+
+  cbs.forEach(cb => cb.checked = master.checked);
+
+  updateBulkActionUI();
+
+}
+
+
+
+function onRowCheckChange() {
+
+  const cbs = document.querySelectorAll('.prod-checkbox');
+
+  const checked = document.querySelectorAll('.prod-checkbox:checked');
+
+  const master = document.getElementById('check-all');
+
+  if (master) {
+
+    master.checked = cbs.length > 0 && checked.length === cbs.length;
+
+    master.indeterminate = checked.length > 0 && checked.length < cbs.length;
+
+  }
+
+  updateBulkActionUI();
+
+}
+
+
+
+function updateBulkActionUI() {
+
+  const checked = document.querySelectorAll('.prod-checkbox:checked');
+
+  const btn = document.getElementById('btn-bulk-delete');
+
+  const countSpan = document.getElementById('selected-count');
+
+  if (btn) {
+
+    if (checked.length > 0) {
+
+      btn.style.display = 'inline-block';
+
+      if (countSpan) countSpan.textContent = checked.length;
+
+    } else {
+
+      btn.style.display = 'none';
+
+    }
+
+  }
+
+}
+
+
+
+async function deleteSelected() {
+
+  const checked = Array.from(document.querySelectorAll('.prod-checkbox:checked')).map(cb => parseInt(cb.value));
+
+  if (checked.length === 0) return;
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa ${checked.length} sản phẩm đã chọn khỏi danh sách theo dõi?`)) return;
+
+
+
+  try {
+
+    const r = await fetch('/api/products/bulk-delete', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({ids: checked})
+
+    });
+
+    const d = await r.json();
+
+    if (d.error) { toast('❌ ' + d.error); return; }
+
+    toast(`🗑️ Đã xóa ${d.deleted_count} sản phẩm!`);
+
+    const master = document.getElementById('check-all');
+
+    if (master) {
+
+      master.checked = false;
+
+      master.indeterminate = false;
+
+    }
+
+    await loadProducts();
+
+    await loadSummary();
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+let currentSortTmall = 'default';
+
+
+
+function setSortTmall(sortKey) {
+
+  currentSortTmall = sortKey;
+
+  renderTmallTable();
+
+}
+
+
+
+function toggleSelectAllTmall(master) {
+
+  const cbs = document.querySelectorAll('.tmall-checkbox');
+
+  cbs.forEach(cb => cb.checked = master.checked);
+
+  updateBulkTmallUI();
+
+}
+
+
+
+function onRowCheckChangeTmall() {
+
+  const cbs = document.querySelectorAll('.tmall-checkbox');
+
+  const checked = document.querySelectorAll('.tmall-checkbox:checked');
+
+  const master = document.getElementById('check-all-tmall');
+
+  if (master) {
+
+    master.checked = cbs.length > 0 && checked.length === cbs.length;
+
+    master.indeterminate = checked.length > 0 && checked.length < cbs.length;
+
+  }
+
+  updateBulkTmallUI();
+
+}
+
+
+
+function updateBulkTmallUI() {
+
+  const checked = document.querySelectorAll('.tmall-checkbox:checked');
+
+  const btn = document.getElementById('btn-bulk-delete-tmall');
+
+  const countSpan = document.getElementById('selected-count-tmall');
+
+  if (btn) {
+
+    if (checked.length > 0) {
+
+      btn.style.display = 'inline-block';
+
+      if (countSpan) countSpan.textContent = checked.length;
+
+    } else {
+
+      btn.style.display = 'none';
+
+    }
+
+  }
+
+}
+
+
+
+async function deleteSelectedTmall() {
+
+  const checked = Array.from(document.querySelectorAll('.tmall-checkbox:checked')).map(cb => parseInt(cb.value));
+
+  if (checked.length === 0) return;
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa ${checked.length} sản phẩm TMALL đã chọn khỏi danh sách?`)) return;
+
+
+
+  try {
+
+    const r = await fetch('/api/products/bulk-delete', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({ids: checked})
+
+    });
+
+    const d = await r.json();
+
+    if (d.error) { toast('❌ ' + d.error); return; }
+
+    toast(`🗑️ Đã xóa ${d.deleted_count} sản phẩm!`);
+
+    const master = document.getElementById('check-all-tmall');
+
+    if (master) {
+
+      master.checked = false;
+
+      master.indeterminate = false;
+
+    }
+
+    await loadProducts();
+
+    await loadSummary();
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  }
+
+}
+
+
+
+async function crawlTmall() {
+
+  const btn = document.getElementById('btn-crawl-tmall');
+
+  if (btn) {
+
+    btn.disabled = true;
+
+    btn.textContent = '⏳ Đang cào TMALL...';
+
+  }
+
+  toast('🚀 Bắt đầu cào sản phẩm TMALL trợ giá...');
+
+  try {
+
+    const r = await fetch('/api/crawl-tmall', { method: 'POST' });
+
+    const d = await r.json();
+
+    if (r.ok) {
+
+      toast('✅ Đang cào dữ liệu ngầm, danh sách sẽ tự động cập nhật sau ít phút!');
+
+      setTimeout(loadProducts, 5000);
+
+      setTimeout(loadProducts, 15000);
+
+      setTimeout(loadProducts, 30000);
+
+    } else {
+
+      toast('❌ Lỗi: ' + (d.error || 'Không thể cào TMALL'));
+
+    }
+
+  } catch (e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  } finally {
+
+    if (btn) {
+
+      btn.disabled = false;
+
+      btn.textContent = '⚡ Cào TMALL Trợ Giá Ngay';
+
+    }
+
+  }
+
+}
+
+
+
+function renderTmallTable() {
+
+  const tmallProducts = allProducts.filter(p => {
+
+    const isTmall = (p.source === 'lazada_tmall') || (p.current_campaign === 'TMALL Trợ Giá');
+
+    if (!isTmall) return false;
+
+    const price = p.current_price || 0;
+
+    if (window._tmallMinPrice !== undefined && price < window._tmallMinPrice) return false;
+
+    if (window._tmallMaxPrice !== undefined && price > window._tmallMaxPrice) return false;
+
+    return true;
+
+  });
+
+  let filtered = [...tmallProducts];
+
+
+
+  if (currentSortTmall === 'price_asc') {
+
+    filtered.sort((a, b) => (a.current_price || 999999999) - (b.current_price || 999999999));
+
+  } else if (currentSortTmall === 'price_desc') {
+
+    filtered.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+
+  } else if (currentSortTmall === 'discount') {
+
+    filtered.sort((a, b) => (b.discount_percent || 0) - (a.discount_percent || 0));
+
+  }
+
+
+
+  const tbody = document.getElementById('tmall-table');
+
+  if (!tbody) return;
+
+
+
+  if (filtered.length === 0) {
+
+    tbody.innerHTML = `<tr>
+
+      <td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">
+
+        <div style="font-size:32px;margin-bottom:8px">🏷️</div>
+
+        <div style="font-weight:600;color:var(--text);font-size:14px;margin-bottom:6px">Chưa có sản phẩm Lazada TMALL nào</div>
+
+        <div style="font-size:12px;margin-bottom:14px">Nhấn nút bên dưới hoặc chờ hệ thống tự động cào theo lịch trình</div>
+
+        <button onclick="crawlTmall()" style="background:#0f146d;border:1px solid rgba(255,255,255,0.25);font-size:12px;padding:6px 14px">⚡ Cào TMALL Trợ Giá Ngay</button>
+
+      </td>
+
+    </tr>`;
+
+    onRowCheckChangeTmall();
+
+    return;
+
+  }
+
+
+
+  tbody.innerHTML = filtered.map(p => {
+
+    const disc = p.discount_percent !== null && p.discount_percent !== undefined
+
+      ? p.discount_percent
+
+      : (p.current_price && p.current_list_price && p.current_list_price > p.current_price
+
+          ? Math.round((1 - p.current_price / p.current_list_price) * 100)
+
+          : null);
+
+
+
+    const displayName = p.name || `⏳ Đang lấy thông tin… (SP #${p.id})`;
+
+    const catHtml = p.category ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">📂 ${p.category}</div>` : '';
+
+    const isOutOfStock = p.is_out_of_stock || p.current_stock === 0;
+
+    const isTracked = (p.source === 'user');
+
+    const targetTag = p.target_price 
+
+      ? `<div style="font-size:11px;color:#38bdf8;font-weight:600;margin-top:2px">🎯 Mục tiêu: ${Number(p.target_price).toLocaleString('vi-VN')}₫</div>` 
+
+      : '';
+
+    const trackBtn = isTracked
+
+      ? `<button class="secondary" disabled style="opacity:0.7;padding:2px 7px;font-size:11px;margin-right:6px">✅ Đang theo dõi</button>`
+
+      : `<button class="secondary" onclick="trackDeal('${p.url}', ${p.current_final_price || p.current_price || 0})" style="padding:2px 7px;font-size:11px;margin-right:6px">➕ Theo dõi</button>`;
+
+
+
+    return `<tr>
+
+      <td style="text-align:center"><input type="checkbox" class="tmall-checkbox" value="${p.id}" onchange="onRowCheckChangeTmall()" style="cursor:pointer;width:15px;height:15px"></td>
+
+      <td style="max-width:320px" title="${p.name || ''}">
+
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${displayName}</div>
+
+        ${catHtml}
+
+      </td>
+
+      <td class="price">
+
+        ${p.current_price ? p.current_price.toLocaleString('vi-VN') + '₫' : '—'}
+
+        ${targetTag}
+
+        ${p.current_voucher_code ? `
+
+          <div style="margin-top:3px">
+
+            <span class="badge" style="background:#7c3aed;color:#fff;font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px" onclick="copyVoucher('${p.current_voucher_code}')" title="Nhấp để copy mã voucher">🎫 ${p.current_voucher_code} (-${Math.round(p.current_voucher_discount).toLocaleString('vi-VN')}₫)</span>
+
+            ${p.current_final_price && p.current_final_price < p.current_price ? `<div style="font-size:11px;color:#10b981;font-weight:700;margin-top:1px">Sau mã: ${Math.round(p.current_final_price).toLocaleString('vi-VN')}₫</div>` : ''}
+
+          </div>` : ''}
+
+      </td>
+
+      <td>${disc !== null ? `<span class="disc">${disc}%</span>` : '—'}</td>
+
+      <td>
+
+        ${isOutOfStock 
+
+          ? '<span class="status-badge" style="background:rgba(239,68,68,0.18);color:#ef4444;font-size:11px;font-weight:700">🔴 Hết hàng</span>' 
+
+          : '<span class="status-badge" style="background:rgba(16,185,129,0.18);color:#10b981;font-size:11px;font-weight:700">🟢 Còn hàng</span>'
+
+        }
+
+      </td>
+
+      <td style="text-align:right;white-space:nowrap">
+
+        ${trackBtn}
+
+        <a class="buy-link" href="${p.url}" target="_blank" rel="noopener" style="margin-right:6px">Xem ↗</a>
+
+        <button class="secondary" onclick="deleteProduct(${p.id})" title="Xóa sản phẩm này" style="padding:2px 7px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,0.3)">🗑️ Xóa</button>
+
+      </td>
+
+    </tr>`;
+
+  }).join('');
+
+
+
+  onRowCheckChangeTmall();
+
+}
+
+
+
+function updateSubsystemToggle(name) {
+
+  const chk = document.getElementById(`setting-${name}-enabled`);
+
+  const inp = document.getElementById(`setting-${name}-interval-input`);
+
+  const hint = document.getElementById(`setting-${name}-status-hint`);
+
+  const quickBtns = document.getElementById(`setting-${name}-quick-btns`);
+
+  if (!chk || !inp) return;
+
+  inp.disabled = !chk.checked;
+
+  inp.style.opacity = chk.checked ? '1' : '0.4';
+
+  if (quickBtns) quickBtns.style.opacity = chk.checked ? '1' : '0.4';
+
+  if (hint) {
+
+    hint.textContent = chk.checked ? 'Đang bật' : '⏸️ Đã tạm dừng';
+
+    hint.style.color = chk.checked ? 'var(--green)' : 'var(--muted)';
+
+  }
+
+}
+
+
+
+async function openSettingsModal() {
+
+  const r = await fetch('/api/settings');
+
+  const d = await r.json();
+
+  document.getElementById('setting-interval-input').value = d.scan_interval_min || 60;
+
+  document.getElementById('setting-keyword-interval-input').value = d.keyword_interval_min || 180;
+
+  document.getElementById('setting-megasale-interval-input').value = d.megasale_interval_min || 60;
+
+  document.getElementById('setting-price-error-interval-input').value = d.price_error_interval_min || 60;
+
+  document.getElementById('setting-tmall-interval-input').value = d.tmall_interval_min || 120;
+
+  document.getElementById('setting-tmall-min-price-input').value = d.tmall_min_price !== undefined ? d.tmall_min_price : 100000;
+
+  document.getElementById('setting-tmall-max-price-input').value = d.tmall_max_price !== undefined ? d.tmall_max_price : 20000000;
+
+  document.getElementById('setting-min-price-input').value = d.deal_min_original_price !== undefined ? d.deal_min_original_price : 500000;
+
+  document.getElementById('setting-unknown-input').checked = !!d.keyword_include_unknown;
+
+
+
+  document.getElementById('setting-keyword-enabled').checked = d.keyword_scan_enabled !== undefined ? !!d.keyword_scan_enabled : true;
+
+  document.getElementById('setting-megasale-enabled').checked = d.megasale_scan_enabled !== undefined ? !!d.megasale_scan_enabled : true;
+
+  document.getElementById('setting-price-error-enabled').checked = d.price_error_scan_enabled !== undefined ? !!d.price_error_scan_enabled : true;
+
+  document.getElementById('setting-tmall-enabled').checked = d.tmall_scan_enabled !== undefined ? !!d.tmall_scan_enabled : true;
+
+  document.getElementById('setting-only-target-alerts').checked = d.only_target_price_alerts !== undefined ? !!d.only_target_price_alerts : true;
+
+
+
+  updateSubsystemToggle('keyword');
+
+  updateSubsystemToggle('megasale');
+
+  updateSubsystemToggle('price-error');
+
+  updateSubsystemToggle('tmall');
+
+
+
+  document.getElementById('settings-modal').style.display = 'flex';
+
+}
+
+
+
+function closeSettingsModal() {
+
+  document.getElementById('settings-modal').style.display = 'none';
+
+}
+
+
+
+async function saveSettings() {
+
+  const parseInterval = (id, label) => {
+
+    const v = parseInt(document.getElementById(id).value, 10);
+
+    if (isNaN(v) || v < 1 || v > 1440) {
+
+      toast(`⚠️ ${label} phải từ 1 đến 1440 phút`);
+
+      return null;
+
+    }
+
+    return v;
+
+  };
+
+  const val = parseInterval('setting-interval-input', 'Tần suất quét sản phẩm theo dõi');
+
+  if (val === null) return;
+
+
+
+  const kwEnabled = document.getElementById('setting-keyword-enabled').checked;
+
+  const msEnabled = document.getElementById('setting-megasale-enabled').checked;
+
+  const peEnabled = document.getElementById('setting-price-error-enabled').checked;
+
+  const tmEnabled = document.getElementById('setting-tmall-enabled').checked;
+
+
+
+  const kwVal = kwEnabled ? parseInterval('setting-keyword-interval-input', 'Tần suất quét từ khóa') : (parseInt(document.getElementById('setting-keyword-interval-input').value, 10) || 180);
+
+  if (kwVal === null) return;
+
+  const msVal = msEnabled ? parseInterval('setting-megasale-interval-input', 'Tần suất quét Siêu Sale') : (parseInt(document.getElementById('setting-megasale-interval-input').value, 10) || 60);
+
+  if (msVal === null) return;
+
+  const peVal = peEnabled ? parseInterval('setting-price-error-interval-input', 'Tần suất quét săn lỗi giá') : (parseInt(document.getElementById('setting-price-error-interval-input').value, 10) || 60);
+
+  if (peVal === null) return;
+
+  const tmVal = tmEnabled ? parseInterval('setting-tmall-interval-input', 'Tần suất quét Lazada TMALL') : (parseInt(document.getElementById('setting-tmall-interval-input').value, 10) || 120);
+
+  if (tmVal === null) return;
+
+
+
+  const minPrice = parseFloat(document.getElementById('setting-min-price-input').value);
+
+  if (isNaN(minPrice) || minPrice < 0) {
+
+    toast('⚠️ Giá gốc tối thiểu không hợp lệ');
+
+    return;
+
+  }
+
+  const tmallMin = parseFloat(document.getElementById('setting-tmall-min-price-input').value);
+
+  if (isNaN(tmallMin) || tmallMin < 0) {
+
+    toast('⚠️ Giá tối thiểu TMALL không hợp lệ');
+
+    return;
+
+  }
+
+  const tmallMax = parseFloat(document.getElementById('setting-tmall-max-price-input').value);
+
+  if (isNaN(tmallMax) || tmallMax < 0) {
+
+    toast('⚠️ Giá tối đa TMALL không hợp lệ');
+
+    return;
+
+  }
+
+  if (tmallMin > tmallMax) {
+
+    toast('⚠️ Giá tối thiểu TMALL không được lớn hơn giá tối đa');
+
+    return;
+
+  }
+
+  const includeUnknown = document.getElementById('setting-unknown-input').checked;
+  const onlyTargetAlerts = document.getElementById('setting-only-target-alerts').checked;
+
+  const r = await fetch('/api/settings', {
+
+    method: 'POST',
+
+    headers: {'Content-Type': 'application/json'},
+
+    body: JSON.stringify({
+
+      scan_interval_min: val,
+
+      keyword_interval_min: kwVal,
+
+      megasale_interval_min: msVal,
+
+      price_error_interval_min: peVal,
+
+      tmall_interval_min: tmVal,
+
+      deal_min_original_price: minPrice,
+
+      tmall_min_price: tmallMin,
+
+      tmall_max_price: tmallMax,
+
+      keyword_include_unknown: includeUnknown,
+
+      keyword_scan_enabled: kwEnabled,
+
+      megasale_scan_enabled: msEnabled,
+
+      price_error_scan_enabled: peEnabled,
+
+      tmall_scan_enabled: tmEnabled,
+
+      only_target_price_alerts: onlyTargetAlerts
+
+    })
+
+  });
+
+  const d = await r.json();
+
+  if (r.ok) {
+
+    window._tmallMinPrice = tmallMin;
+
+    window._tmallMaxPrice = tmallMax;
+
+    updateJunkPriceLabel(minPrice);
+
+    closeSettingsModal();
+
+    const parts = [
+
+      `Theo dõi ${val}p`,
+
+      `Từ khóa: ${kwEnabled ? kwVal + 'p' : 'Tắt'}`,
+
+      `Siêu Sale: ${msEnabled ? msVal + 'p' : 'Tắt'}`,
+
+      `Lỗi giá: ${peEnabled ? peVal + 'p' : 'Tắt'}`,
+
+      `TMALL: ${tmEnabled ? tmVal + 'p' : 'Tắt'}`
+
+    ];
+
+    toast(`✅ Đã lưu: ${parts.join(' | ')}`);
+
+    loadSummary();
+
+    loadProducts();
+
+  } else {
+
+    toast('❌ Lỗi: ' + (d.error || 'Không thể lưu cài đặt'));
+
+  }
+
+}
+
+
+
+
+
+async function initSettings() {
+
+  try {
+
+    const r = await fetch('/api/settings');
+
+    const d = await r.json();
+
+    if (d.deal_min_original_price !== undefined) {
+
+      updateJunkPriceLabel(d.deal_min_original_price);
+
+    }
+
+  } catch(e) {}
+
+}
+
+
+
+// ── Keyword Tracking Functions ─────────────────────────────────────────────
+
+let allKeywords = [];
+
+
+
+async function loadKeywords() {
+
+  try {
+
+    const r = await fetch('/api/keywords');
+
+    allKeywords = await r.json();
+
+    const countEl = document.getElementById('keywords-tab-count');
+
+    if (countEl) countEl.textContent = allKeywords.length;
+
+
+
+    const selectEl = document.getElementById('kw-product-filter-select');
+
+    if (selectEl) {
+
+      const cur = selectEl.value;
+
+      selectEl.innerHTML = '<option value="">Tất cả từ khóa</option>' +
+
+        allKeywords.map(k => `<option value="${k.id}">${k.keyword}</option>`).join('');
+
+      selectEl.value = cur;
+
+    }
+
+
+
+    const container = document.getElementById('keywords-list-container');
+
+    if (!container) return;
+
+
+
+    if (allKeywords.length === 0) {
+
+      container.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px">Chưa có từ khóa nào được thiết lập. Hãy thêm từ khóa ở biểu mẫu phía trên.</div>';
+
+      loadKeywordProducts();
+
+      return;
+
+    }
+
+
+
+    const rows = allKeywords.map(k => {
+
+      let f = {};
+
+      try { f = JSON.parse(k.filters_json || '{}'); } catch(e){}
+
+      const svcs = (f.services || []).join(', ') || 'Không';
+
+      const origText = f.origin_filter === 'vn' ? '🇻🇳 Việt Nam' : (f.origin_filter === 'foreign' ? '🌐 Nước ngoài' : '⚡ Mặc định');
+
+      const shipText = f.ship_filter === 'vn' ? '🇻🇳 Việt Nam' : (f.ship_filter === 'foreign' ? '🌐 Nước ngoài' : '⚡ Mặc định');
+
+      const activeBtn = k.active
+
+        ? `<button onclick="toggleKeyword(${k.id}, false)" style="background:#10b981;padding:3px 8px;font-size:11px">🟢 Bật</button>`
+
+        : `<button class="secondary" onclick="toggleKeyword(${k.id}, true)" style="padding:3px 8px;font-size:11px">⚪ Tắt</button>`;
+
+
+
+      return `<tr>
+
+        <td style="font-weight:700;color:#fff">${k.keyword}</td>
+
+        <td>
+
+          <div style="font-size:11px">Nguồn: <b>${origText}</b> | Gửi: <b>${shipText}</b></div>
+
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Dịch vụ: ${svcs}</div>
+
+        </td>
+
+        <td>
+
+          <div style="font-size:11px">${k.last_run || 'Chưa quét'}</div>
+
+          <div style="font-size:11px;color:var(--muted)">Quét: ${k.last_scanned || 0} | Khớp: <b style="color:var(--green)">${k.last_matched || 0}</b></div>
+
+        </td>
+
+        <td>${activeBtn}</td>
+
+        <td style="text-align:right;white-space:nowrap">
+
+          <button onclick="triggerKeywordSearch(${k.id})" style="background:#6366f1;padding:4px 8px;font-size:11px;margin-right:4px">⚡ Quét</button>
+
+          <button class="secondary" onclick="clearKeywordCache(${k.id})" title="Xóa bộ nhớ đệm 7 ngày để quét lại toàn bộ" style="padding:4px 8px;font-size:11px;margin-right:4px">🧹 Xóa Cache</button>
+
+          <button class="secondary" onclick="deleteKeyword(${k.id})" style="padding:4px 8px;font-size:11px;color:var(--red)">🗑️</button>
+
+        </td>
+
+      </tr>`;
+
+    }).join('');
+
+
+
+    container.innerHTML = `
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Từ khóa</th>
+
+              <th>Bộ lọc cấu hình</th>
+
+              <th>Lần quét gần nhất</th>
+
+              <th>Trạng thái</th>
+
+              <th style="text-align:right">Thao tác</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>${rows}</tbody>
+
+        </table>
+
+      </div>
+
+    `;
+
+
+
+    loadKeywordProducts();
+
+  } catch(e) {
+
+    console.error('loadKeywords error', e);
+
+  }
+
+}
+
+
+
+async function saveKeyword() {
+
+  const kw = document.getElementById('kw-input-name').value.trim();
+
+  if (!kw) { toast('⚠️ Vui lòng nhập từ khóa'); return; }
+
+  const origin = document.getElementById('kw-filter-origin').value;
+
+  const ship = document.getElementById('kw-filter-ship').value;
+
+  const shop = document.getElementById('kw-filter-shop').value;
+
+  const platform = document.getElementById('kw-filter-platform').value;
+
+
+
+  const svcs = [];
+
+  document.querySelectorAll('#kw-services-checkboxes input:checked').forEach(c => svcs.push(c.value));
+
+
+
+  const btn = document.getElementById('btn-save-kw');
+
+  btn.disabled = true;
+
+  try {
+
+    const r = await fetch('/api/keywords', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({
+
+        keyword: kw,
+
+        origin_filter: origin,
+
+        ship_filter: ship,
+
+        shop_filter: shop,
+
+        platform: platform,
+
+        services: svcs,
+
+        max_results: 30,
+
+      })
+
+    });
+
+    const d = await r.json();
+
+    if (r.ok) {
+
+      toast(`✅ Đã lưu từ khóa theo dõi "${kw}"`);
+
+      document.getElementById('kw-input-name').value = '';
+
+      loadKeywords();
+
+    } else {
+
+      toast('❌ Lỗi: ' + (d.error || 'Không thể lưu'));
+
+    }
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  } finally {
+
+    btn.disabled = false;
+
+  }
+
+}
+
+
+
+async function toggleKeyword(kid, active) {
+
+  await fetch(`/api/keywords/${kid}/toggle`, {
+
+    method: 'POST',
+
+    headers: {'Content-Type': 'application/json'},
+
+    body: JSON.stringify({active: active})
+
+  });
+
+  loadKeywords();
+
+}
+
+
+
+async function deleteKeyword(kid) {
+
+  if (!confirm('Bạn có chắc muốn xóa từ khóa này khỏi danh sách theo dõi?')) return;
+
+  await fetch(`/api/keywords/${kid}`, { method: 'DELETE' });
+
+  toast('🗑️ Đã xóa từ khóa');
+
+  loadKeywords();
+
+}
+
+
+
+async function clearKeywordCache(kid) {
+
+  const r = await fetch(`/api/keywords/${kid}/clear-cache`, { method: 'POST' });
+
+  const d = await r.json();
+
+  toast(d.message || 'Đã xóa bộ nhớ đệm');
+
+}
+
+
+
+async function triggerKeywordSearch(kid = null) {
+
+  const btn = kid ? null : document.getElementById('btn-scan-all-kw');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang quét…'; }
+
+  try {
+
+    const r = await fetch('/api/keywords/search', {
+
+      method: 'POST',
+
+      headers: {'Content-Type': 'application/json'},
+
+      body: JSON.stringify({keyword_id: kid})
+
+    });
+
+    const d = await r.json();
+
+    toast(d.message || 'Đang quét...');
+
+    setTimeout(loadKeywords, 4000);
+
+  } catch(e) {
+
+    toast('❌ Lỗi: ' + e.message);
+
+  } finally {
+
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Quét tìm kiếm ngay'; }
+
+  }
+
+}
+
+
+
+async function loadKeywordProducts(kid = null) {
+
+  try {
+
+    const selectEl = document.getElementById('kw-product-filter-select');
+
+    const selectedKid = kid !== null ? kid : (selectEl ? selectEl.value : '');
+
+    const url = selectedKid ? `/api/keyword-products?keyword_id=${selectedKid}` : '/api/keyword-products';
+
+    const r = await fetch(url);
+
+    const items = await r.json();
+
+
+
+    const container = document.getElementById('keyword-products-container');
+
+    if (!container) return;
+
+
+
+    if (items.length === 0) {
+
+      container.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px">Chưa có sản phẩm nào khớp với bộ lọc từ khóa này. Bấm "Quét" để tìm kiếm.</div>';
+
+      return;
+
+    }
+
+
+
+    const rows = items.map(p => {
+
+      const vBadge = p.match_verified
+
+        ? '<span class="badge" style="background:#10b981;color:#fff;font-size:10px">✅ Đã xác minh</span>'
+
+        : '<span class="badge" style="background:#eab308;color:#000;font-size:10px">⚠️ Chưa rõ</span>';
+
+      const fPrice = p.current_final_price || p.current_price;
+
+      const fPriceStr = fPrice ? Number(fPrice).toLocaleString('vi-VN') + '₫' : '—';
+
+      const vLine = p.current_voucher_code ? `<span class="badge" style="background:rgba(239,68,68,0.2);color:#ef4444;font-size:10px">-${Number(p.current_voucher_discount).toLocaleString()}₫</span>` : '';
+
+      const isTracked = (p.source === 'user');
+
+      const trackBtn = isTracked
+
+        ? '<button class="secondary" disabled style="opacity:0.7;font-size:11px;padding:3px 8px;margin-right:6px">✅ Đang theo dõi</button>'
+
+        : `<button class="secondary" onclick="trackDeal('${p.url}', ${fPrice || 0})" style="font-size:11px;padding:3px 8px;margin-right:6px">➕ Theo dõi</button>`;
+
+
+
+      return `<tr>
+
+        <td style="max-width:320px">
+
+          <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.name}">${p.name}</div>
+
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+
+            Từ khóa: <b>${p.keyword_name || '—'}</b> | Shop: ${p.shop || 'Chưa rõ'}
+
+          </div>
+
+        </td>
+
+        <td>${getPlatformBadge(p.platform)}</td>
+
+        <td style="color:var(--green);font-weight:700;font-size:14px">
+
+          ${fPriceStr} ${vLine}
+
+        </td>
+
+        <td>
+
+          <div style="font-size:11px">Gửi: <b>${p.ships_from || 'Chưa rõ'}</b></div>
+
+          <div style="font-size:11px;color:var(--muted)">Xuất xứ: ${p.origin || 'Chưa rõ'}</div>
+
+        </td>
+
+        <td>
+
+          <div style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.services || ''}">${p.services || '—'}</div>
+
+        </td>
+
+        <td>${vBadge}</td>
+
+        <td style="text-align:right;white-space:nowrap">
+
+          ${trackBtn}
+
+          <a class="buy-link" href="${p.url}" target="_blank" rel="noopener">Mở mua ↗</a>
+
+        </td>
+
+      </tr>`;
+
+    }).join('');
+
+
+
+    container.innerHTML = `
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Sản phẩm</th>
+
+              <th>Sàn</th>
+
+              <th>Giá tốt nhất</th>
+
+              <th>Địa lý & Vận chuyển</th>
+
+              <th>Dịch vụ Lazada</th>
+
+              <th>Xác minh</th>
+
+              <th style="text-align:right">Hành động</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>${rows}</tbody>
+
+        </table>
+
+      </div>
+
+    `;
+
+  } catch(e) {
+
+    console.error('loadKeywordProducts error', e);
+
+  }
+
+}
+
+
+
+// Initial load + auto-refresh every 2 minutes
+
+initSettings();
+
+loadSummary();
+
+loadProducts();
+
+loadAnomalies();
+
+loadKeywords();
+
+checkSession();
+
+setInterval(() => { loadSummary(); loadProducts(); }, 120_000);
+
+setInterval(checkSession, 30_000);
+
+</script>
+
+</body>
+
+</html>
+
