@@ -99,9 +99,9 @@ def test_independent_intervals_settings_api(tmp_path):
     assert "keyword_interval_min" in d
     assert "megasale_interval_min" in d
     assert "price_error_interval_min" in d
-    assert d["keyword_scan_enabled"] is True
+    assert d["keyword_scan_enabled"] is False
     assert d["megasale_scan_enabled"] is False
-    assert d["price_error_scan_enabled"] is True
+    assert d["price_error_scan_enabled"] is False
 
     # POST new values for all 4 intervals and toggle flags
     payload = {
@@ -156,6 +156,9 @@ def test_scanner_scan_due(tmp_path):
     config.megasale_interval_min = 60
     config.price_error_interval_min = 60
     config.megasale_scan_enabled = True
+    config.keyword_scan_enabled = True
+    config.price_error_scan_enabled = True
+    config.tmall_scan_enabled = True
 
     adapter = MockAdapter()
     notifier = Notifier(config)

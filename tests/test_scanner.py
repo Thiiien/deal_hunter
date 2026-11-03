@@ -1051,6 +1051,26 @@ def test_scan_product_tier1_fast_fetch_escalates_to_tier2(config, db):
     scanner._adapter.fetch.assert_called_once()
 
 
+def test_scan_product_tier1_escalates_on_target_price_hit(config, db):
+    """Chạm giá mong muốn với mức giảm nhỏ (<20%) vẫn phải qua Tier-2 xác thực (ADR 0060)."""
+    from deal_hunter.models import Snapshot
+    url = "https://shopee.vn/product-i.123.456"
+    p_id = _add_product(db, url)
+    db.set_target_price(p_id, 795000)
+    db.save_snapshot(p_id, Snapshot(platform="shopee", item_key="123.456", url=url, name="Shopee Item", shop="Test Shop", price=800000, list_price=1000000, stock=True))
+
+    scanner, _ = _make_scanner(config, db)
+    fast_snap = Snapshot(platform="shopee", item_key="123.456", url=url, name="Shopee Item", shop="Test Shop", price=790000, list_price=1000000, stock=True)
+    verified_snap = Snapshot(platform="shopee", item_key="123.456", url=url, name="Shopee Item", shop="Test Shop", price=790000, list_price=1000000, stock=True)
+    scanner._adapter.fast_fetch = MagicMock(return_value=fast_snap)
+    scanner._adapter.fetch = MagicMock(return_value=verified_snap)
+
+    res = scanner.scan_product(p_id)
+
+    assert res == verified_snap
+    scanner._adapter.fetch.assert_called_once()
+
+
 def test_scan_due_reads_dynamic_interval_from_db(config, db):
     from unittest.mock import patch
     scanner, _ = _make_scanner(config, db)

@@ -326,6 +326,34 @@ def test_bot_admin_guard(config, db):
             assert "Đang quét" in mock_reply.call_args[0][1]
 
 
+def test_config_defaults_follow_adr_0055_and_0062(monkeypatch):
+    for k in ("KEYWORD_SCAN_ENABLED", "PRICE_ERROR_SCAN_ENABLED", "TMALL_SCAN_ENABLED", "MEGASALE_SCAN_ENABLED", "ONLY_TARGET_PRICE_ALERTS"):
+        monkeypatch.delenv(k, raising=False)
+    for cfg in (Config(), Config.from_env()):
+        assert not (cfg.keyword_scan_enabled or cfg.price_error_scan_enabled or cfg.tmall_scan_enabled or cfg.megasale_scan_enabled)
+        assert cfg.only_target_price_alerts is True
+
+
+def test_bot_links_go_through_affiliate(db):
+    from deal_hunter.models import Snapshot
+
+    cfg = Config(telegram_token="123456:fake_token", admin_chat_id="12345", aff_shopee="https://aff.link?to={raw}")
+    bot = create_bot(cfg, db, MagicMock(), MagicMock(), MagicMock())
+    bot.threaded = False
+    pid = db.add_product_url("https://shopee.vn/p-1", "shopee", "item_1", source="user")
+    snap = Snapshot(platform="shopee", item_key="item_1", url="https://shopee.vn/p-1", name="SP", shop="S", price=100_000.0, list_price=120_000.0, stock=True)
+    db.update_product_from_snapshot(pid, snap)
+    db.save_snapshot(pid, snap)
+
+    fake_msg = MagicMock(content_type="text", text="/list")
+    fake_msg.from_user.id = 12345
+    fake_msg.chat.id = 12345
+    with patch.object(bot, "reply_to"), patch.object(bot, "send_message") as mock_send:
+        bot.process_new_messages([fake_msg])
+    texts = [c.args[1] for c in mock_send.call_args_list]
+    assert any("href='https://aff.link?to=https://shopee.vn/p-1'" in t for t in texts), texts
+
+
 def test_bot_list_command(config, db):
     from deal_hunter.models import Snapshot
 

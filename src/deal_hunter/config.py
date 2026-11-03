@@ -27,13 +27,13 @@ class Config:
     megasale_interval_min: int = 60
     price_error_interval_min: int = 60
     tmall_interval_min: int = 120
-    keyword_scan_enabled: bool = True
+    keyword_scan_enabled: bool = False      # ADR 0055: discovery subsystems off by default
     megasale_scan_enabled: bool = False
-    price_error_scan_enabled: bool = True
-    tmall_scan_enabled: bool = True
+    price_error_scan_enabled: bool = False
+    tmall_scan_enabled: bool = False
     tmall_min_price: float = 100000.0
     tmall_max_price: float = 20000000.0
-    only_target_price_alerts: bool = False
+    only_target_price_alerts: bool = True    # ADR 0062
     cdp_url: str = ""
 
     @classmethod
@@ -62,10 +62,10 @@ class Config:
             megasale_interval_min=int(os.getenv("MEGASALE_INTERVAL_MIN", "60")),
             price_error_interval_min=int(os.getenv("PRICE_ERROR_INTERVAL_MIN", "60")),
             tmall_interval_min=int(os.getenv("TMALL_INTERVAL_MIN", "120")),
-            keyword_scan_enabled=os.getenv("KEYWORD_SCAN_ENABLED", "1").lower() in ("1", "true", "yes"),
+            keyword_scan_enabled=os.getenv("KEYWORD_SCAN_ENABLED", "0").lower() in ("1", "true", "yes"),
             megasale_scan_enabled=os.getenv("MEGASALE_SCAN_ENABLED", "0").lower() in ("1", "true", "yes"),
-            price_error_scan_enabled=os.getenv("PRICE_ERROR_SCAN_ENABLED", "1").lower() in ("1", "true", "yes"),
-            tmall_scan_enabled=os.getenv("TMALL_SCAN_ENABLED", "1").lower() in ("1", "true", "yes"),
+            price_error_scan_enabled=os.getenv("PRICE_ERROR_SCAN_ENABLED", "0").lower() in ("1", "true", "yes"),
+            tmall_scan_enabled=os.getenv("TMALL_SCAN_ENABLED", "0").lower() in ("1", "true", "yes"),
             tmall_min_price=float(os.getenv("TMALL_MIN_PRICE", "100000")),
             tmall_max_price=float(os.getenv("TMALL_MAX_PRICE", "20000000")),
             only_target_price_alerts=os.getenv("ONLY_TARGET_PRICE_ALERTS", "1").lower() in ("1", "true", "yes"),

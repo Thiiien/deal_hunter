@@ -30,6 +30,7 @@ from .notifier import Notifier
 from .quota import QuotaMonitor
 from .scanner import Scanner
 from .adapters.base import BaseAdapter
+from .affiliate import AffiliateLinker
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ def create_bot(
 ) -> telebot.TeleBot:
     bot = telebot.TeleBot(config.telegram_token, parse_mode="HTML")
     admin_id = _parse_admin_id(config.admin_chat_id)
+    linker = AffiliateLinker(config)
     user_context: dict[int, dict] = {}
 
     try:
@@ -142,7 +144,7 @@ def create_bot(
                         f"{v_line}"
                         f"{target_line}"
                         f"{stock_line}"
-                        f"🔗 <a href='{snap.url}'>Xem ngay trên {snap.platform.title()} ↗</a>"
+                        f"🔗 <a href='{linker.build(snap.platform, snap.url)}'>Xem ngay trên {snap.platform.title()} ↗</a>"
                     )
                     markup = InlineKeyboardMarkup()
                     markup.add(
@@ -226,7 +228,7 @@ def create_bot(
         for p in chunk:
             pid = p["id"]
             pname = html.escape(p["name"] or "Sản phẩm đang theo dõi")
-            url = p["url"] or ""
+            url = linker.build(p["platform"], p["url"]) if p["url"] else ""
 
             price_val = p["current_price"]
             if price_val and price_val > 0:
@@ -310,7 +312,7 @@ def create_bot(
             latest_price = db.get_latest_price(pid)
             price_str = f"{latest_price:,.0f}₫" if latest_price else "Đang cập nhật"
             pname = html.escape(p["name"] or f"Sản phẩm #{pid}") if p else f"Sản phẩm #{pid}"
-            purl = p["url"] if p else ""
+            purl = linker.build(p["platform"], p["url"]) if p else ""
 
             row = db.conn.execute("SELECT voucher_code, voucher_discount, final_price FROM price_history WHERE product_id=? ORDER BY ts DESC LIMIT 1", (pid,)).fetchone()
             v_line = ""
@@ -519,8 +521,6 @@ def create_bot(
             return
 
         if action == "publish_anomaly":
-            from .affiliate import AffiliateLinker
-            linker = AffiliateLinker(config)
             link = linker.build(anom["platform"], anom["url"])
             disc_pct = round(anom["discount"] * 100)
             plat_badge = "🔵 [LAZADA]" if anom["platform"] == "lazada" else "🟠 [SHOPEE]"

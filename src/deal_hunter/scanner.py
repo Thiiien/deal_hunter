@@ -1050,7 +1050,7 @@ class Scanner:
             else:
                 try:
                     last_p = self._db.get_latest_price(product_id)
-                    target_p = p.get("target_price") if isinstance(p, dict) and "target_price" in p.keys() else None
+                    target_p = p["target_price"] if "target_price" in p.keys() else None
                     curr_p = getattr(snapshot, "final_price", None) or snapshot.price
                     should_escalate = False
                     if curr_p and curr_p > 0:
