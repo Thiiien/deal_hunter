@@ -121,6 +121,7 @@ class PlaywrightAdapter(BaseAdapter):
         self._using_cdp = False
         self._item_locations: dict[str, str] = {}
         self._quota = None
+        self._cookie_mtime: dict[str, float] = {}  # ADR 0067: cookie file state we loaded or wrote
 
     # ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -242,13 +243,31 @@ class PlaywrightAdapter(BaseAdapter):
             if not cookie_file.exists():
                 continue
             try:
-                import json
+                mtime = cookie_file.stat().st_mtime
+                if self._cookie_mtime.get(fname) == mtime:
+                    continue  # unchanged since we loaded or wrote it: the live jar is at least as fresh
                 cookies = json.loads(cookie_file.read_text(encoding="utf-8"))
                 if isinstance(cookies, list) and cookies:
                     self._ctx.add_cookies(cookies)
+                    self._cookie_mtime[fname] = mtime
                     log.info("Đã nạp %d cookies từ %s", len(cookies), cookie_file)
             except Exception as exc:
                 log.warning("Không thể nạp cookies từ %s: %s", cookie_file, exc)
+
+    def _persist_cookies(self, platform: str, data_dir: Path | None = None):
+        """ADR 0067: write the live jar back so rotated tokens survive a restart; never overwrite a fresh login."""
+        fname = "cookies_lazada.json" if platform == "lazada" else "cookies.json"
+        path = (data_dir or Path(self._config.db_path).parent) / fname
+        try:
+            if path.exists() and path.stat().st_mtime != self._cookie_mtime.get(fname):
+                return  # written by a re-login we have not loaded yet
+            cookies = [c for c in self._ctx.cookies() if platform in str(c.get("domain", ""))]
+            if not cookies:
+                return
+            path.write_text(json.dumps(cookies, indent=2, ensure_ascii=False), encoding="utf-8")
+            self._cookie_mtime[fname] = path.stat().st_mtime
+        except Exception as exc:
+            log.debug("Could not persist %s cookies: %s", platform, exc)
 
     def reload_cookies(self, data_dir: Path | None = None, timeout: float = 5.0):
         """Thread-safe method to reload saved cookies into the browser context."""
@@ -519,7 +538,13 @@ class PlaywrightAdapter(BaseAdapter):
         return None
 
     def fetch(self, url: str, target_sku: str | None = None, is_tracked: bool = False) -> Snapshot:
-        return self._executor.submit(self._fetch_sync, url, target_sku, is_tracked).result()
+        snap = self._executor.submit(self._fetch_sync, url, target_sku, is_tracked).result()
+        if snap is not None and snap.price and self.parse_platform(url) == "lazada":
+            try:
+                self._executor.submit(self._persist_cookies, "lazada").result(timeout=5)
+            except Exception:
+                pass
+        return snap
 
     def _fetch_sync(self, url: str, target_sku: str | None = None, is_tracked: bool = False) -> Snapshot:
         self._ensure_started()

@@ -1137,6 +1137,32 @@ def test_lazada_swatch_probing_when_target_or_lowest_sku_out_of_stock(config):
     assert mock_page.wait_for_function.call_args.kwargs["timeout"] == 500
 
 
+def test_persist_cookies_syncs_live_jar_but_never_overwrites_a_fresh_login(config, tmp_path):
+    """ADR 0067: live Lazada cookies are written back; a file changed by a re-login is loaded, not overwritten."""
+    import json, os
+    from unittest.mock import MagicMock
+    from deal_hunter.adapters.playwright import PlaywrightAdapter
+    adapter = PlaywrightAdapter(config)
+    adapter._ctx = MagicMock()
+    adapter._ctx.cookies.return_value = [
+        {"name": "_m_h5_tk", "value": "new", "domain": ".lazada.vn", "path": "/", "expires": -1},
+        {"name": "SPC_EC", "value": "x", "domain": ".shopee.vn", "path": "/", "expires": -1},
+    ]
+    f = tmp_path / "cookies_lazada.json"
+    adapter._persist_cookies("lazada", data_dir=tmp_path)
+    assert [c["name"] for c in json.loads(f.read_text(encoding="utf-8"))] == ["_m_h5_tk"]
+    adapter._load_saved_cookies(tmp_path)
+    assert adapter._ctx.add_cookies.call_count == 0  # file we just wrote: nothing newer to inject
+    f.write_text(json.dumps([{"name": "lzd_sid", "value": "fresh", "domain": ".lazada.vn"}]), encoding="utf-8")
+    os.utime(f, (f.stat().st_atime, f.stat().st_mtime + 10))
+    adapter._persist_cookies("lazada", data_dir=tmp_path)
+    assert json.loads(f.read_text(encoding="utf-8"))[0]["name"] == "lzd_sid"  # re-login kept
+    adapter._load_saved_cookies(tmp_path)
+    assert adapter._ctx.add_cookies.call_count == 1  # the re-login is injected once
+    adapter._persist_cookies("lazada", data_dir=tmp_path)
+    assert json.loads(f.read_text(encoding="utf-8"))[0]["name"] == "_m_h5_tk"  # in sync again
+
+
 def test_lazada_resource_blocking_aborts_images_only_when_enabled(config):
     """Image-blocking trial: images aborted only with block_images; Lazada scripts always continue."""
     from unittest.mock import MagicMock

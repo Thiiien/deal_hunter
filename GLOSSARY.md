@@ -215,7 +215,7 @@ Trong đăng nhập tương tác, hệ thống nhận ra người dùng đã đ�
 _Avoid_: Tự động điền mật khẩu
 
 **Chặn Captcha (Captcha Intercept)**:
-Sàn chặn dữ liệu bằng thử thách xác minh (thanh trượt, puzzle, reCAPTCHA). Thứ tự xử lý: dùng cookie sẵn có; nếu trang vẫn bị chặn, tự kéo thanh trượt mô phỏng người thật; rồi chờ tiện ích NopeCHA trong trình duyệt tối đa 15 giây. Thất bại thì coi là Lỗi sàn diện rộng; sau 3 link liên tiếp bị chặn thì dừng sàn đó trong chu kỳ.
+Sàn chặn dữ liệu bằng thử thách xác minh (thanh trượt, puzzle, reCAPTCHA). Thứ tự xử lý: dùng cookie sẵn có; nếu trang vẫn bị chặn, tự kéo thanh trượt mô phỏng người thật; rồi chờ tiện ích NopeCHA trong trình duyệt tối đa 15 giây. Thất bại thì coi là Lỗi sàn diện rộng; sau 3 link liên tiếp bị chặn thì sàn đó tạm nghỉ (xem Tạm nghỉ sàn sau khi bị chặn).
 _Avoid_: Bot block, rate limit
 
 **Hạn ngạch giải mã (Solver Quota)**:
@@ -225,6 +225,14 @@ _Avoid_: Số lần cào, giới hạn request
 **Lỗi sàn diện rộng (Platform-Wide Block)**:
 Sự cố cấp toàn sàn (phiên hết hạn, captcha không giải được, lỗi xác thực của cổng API) khiến hệ thống dừng quét phần còn lại của sàn đó trong chu kỳ; captcha cũng tính là lỗi sàn sau 3 link liên tiếp bị chặn. Phân biệt với lỗi của một link cá biệt, chỉ bỏ qua link đó.
 _Avoid_: Tính lỗi sàn vào số lỗi của từng sản phẩm
+
+**Tạm nghỉ sàn sau khi bị chặn (Platform Pause)**:
+Sau một Lỗi sàn diện rộng do bị chặn, sàn đó nghỉ 30 phút rồi tự thử lại với một sản phẩm; còn bị chặn thì nghỉ tiếp 30 phút, quét được thì chạy lại bình thường. Admin nhận đúng hai tin: một khi bắt đầu nghỉ, một khi chạy lại. Không phụ thuộc hạn ngạch giải mã và không cần người can thiệp.
+_Avoid_: Báo admin mỗi chu kỳ, dừng hẳn chờ đăng nhập lại
+
+**Đồng bộ cookie từ trình duyệt (Cookie Write-back)**:
+Sau mỗi lượt quét Lazada thành công, cookie hiện tại của trình duyệt quét được ghi lại vào bộ cookie lưu trữ, để token sàn vừa xoay không mất khi khởi động lại. Bộ cookie chỉ được nạp lại vào trình duyệt khi file thay đổi từ bên ngoài, tức người dùng vừa đăng nhập lại; file đó không bao giờ bị ghi đè trước khi được nạp.
+_Avoid_: Nạp đè cookie cũ lên phiên đang sống
 
 **Cảnh báo lỗi kép (Dual Failure Alert)**:
 Cảnh báo khẩn gửi admin chỉ khi cả cookie lẫn bộ giải captcha cùng thất bại, nói rõ phiên hết hạn hay hết lượt giải. Không gửi khi quét vẫn thành công nhờ cookie.

@@ -1086,6 +1086,8 @@ def test_scan_platform_blocked_token_fallback(config, db):
 
     notifier.reset_mock()
 
+    scanner._paused_until.clear(); scanner._pause_alerted.clear()  # ADR 0067: end the pause the first block started
+
     with patch("deal_hunter.login.check_session_valid", return_value=True):
 
         ok, fail = scanner._scan_platform("shopee", products)
@@ -1225,6 +1227,39 @@ def test_adaptive_cadence_skips_far_products_two_cycles(config, db):
     with patch.object(scanner, "_scan_platform", return_value=(0, 0)) as mock_platform:
         scanner.scan_tracked_products()
         mock_platform.assert_called_once()
+
+
+def test_platform_pauses_after_three_blocks(config, db):
+    """ADR 0067: three consecutive blocks pause the platform 30 min with one alert; a successful probe resumes it."""
+    import time
+    from unittest.mock import patch
+    from deal_hunter.adapters.base import Blocked
+    for i in (1, 2, 3, 4):
+        db.add_product_url(f"https://www.lazada.vn/products/x-i{i}.html", "lazada", str(i), source="user")
+    scanner, notifier = _make_scanner(config, db)
+    good = scanner._adapter
+    adapter = MagicMock(); adapter.fast_fetch.return_value = None; adapter.fetch.side_effect = Blocked("captcha")
+    scanner._adapter = adapter
+    with patch("time.sleep"):
+        scanner.scan_tracked_products()
+    assert adapter.fetch.call_count == 3
+    assert notifier.alert_admin.call_count == 1
+    assert "30 phút" in notifier.alert_admin.call_args[0][0]
+    adapter.fetch.reset_mock()
+    with patch("time.sleep"):
+        scanner.scan_tracked_products()  # paused: nothing fetched, no new alert
+    assert adapter.fetch.call_count == 0 and notifier.alert_admin.call_count == 1
+    scanner._paused_until["lazada"] = time.time() - 1  # pause over: probe with one product
+    with patch("time.sleep"):
+        scanner.scan_tracked_products()
+    assert adapter.fetch.call_count == 1 and notifier.alert_admin.call_count == 1  # blocked again: silent re-pause
+    scanner._paused_until["lazada"] = time.time() - 1
+    scanner._adapter = good
+    with patch("time.sleep"):
+        scanner.scan_tracked_products()
+    assert notifier.alert_admin.call_count == 2
+    assert "quét lại" in notifier.alert_admin.call_args[0][0]
+    assert "lazada" not in scanner._paused_until
 
 
 def test_only_target_price_alerts_mode(config, db):

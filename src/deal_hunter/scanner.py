@@ -158,6 +158,8 @@ class Scanner:
 
         self._last_tracked_scan_time: float = 0.0
         self._skipped_cycles: dict[int, int] = {}  # ADR 0066: cycles a far-from-target product has been skipped
+        self._paused_until: dict[str, float] = {}  # ADR 0067: platform rests after 3 consecutive blocks
+        self._pause_alerted: set[str] = set()
 
         self._last_keyword_scan_time: float = 0.0
 
@@ -1299,6 +1301,12 @@ class Scanner:
         cookie_file = "cookies_lazada.json" if platform == "lazada" else "cookies.json"
 
         plat_name = "Lazada" if platform == "lazada" else "Shopee"
+        # ADR 0067: after 3 consecutive blocks the platform rests 30 min, then probes with one product
+        paused_until = self._paused_until.get(platform, 0.0)
+        if time.time() < paused_until:
+            log.info("%s paused after blocks, %d s left", plat_name, int(paused_until - time.time()))
+            return 0, len(products)
+        probing = paused_until > 0.0
 
 
 
@@ -1345,6 +1353,10 @@ class Scanner:
                     ok += 1
 
                     self._db.reset_product_fail_count(prod["id"])
+                    if platform in self._pause_alerted:
+                        self._pause_alerted.discard(platform)
+                        self._paused_until.pop(platform, None)
+                        self._notifier.alert_admin(f"✅ Sàn {plat_name} đã quét lại được sau khi tạm dừng vì bị chặn.")
 
                 delay = self._config.request_delay_sec
 
@@ -1370,7 +1382,7 @@ class Scanner:
 
                 log.warning("Blocked on %s (consecutive: %d)", prod["url"], consecutive_blocks)
 
-                if consecutive_blocks >= 3 or (len(products) == 1 and consecutive_blocks >= 1):
+                if consecutive_blocks >= 3 or probing or (len(products) == 1 and consecutive_blocks >= 1):
 
                     data_dir = str(Path(self._config.db_path).parent)
 
@@ -1410,7 +1422,10 @@ class Scanner:
 
                     log.warning(msg)
 
-                    self._notifier.alert_admin(msg)
+                    self._paused_until[platform] = time.time() + 1800
+                    if platform not in self._pause_alerted:  # one alert per pause episode, one more on resume
+                        self._pause_alerted.add(platform)
+                        self._notifier.alert_admin(msg + "\n⏸ Tạm dừng quét sàn này 30 phút, sau đó tự thử lại một sản phẩm; sẽ báo khi chạy lại.")
 
                     fail += len(products) - (ok + fail)
 
