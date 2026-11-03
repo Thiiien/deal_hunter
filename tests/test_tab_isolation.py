@@ -734,7 +734,8 @@ def test_product_reactivate_endpoint_and_include_inactive(tmp_path):
     assert len(db.get_products_with_latest_price(include_inactive=False)) == 1
 
 
-def test_db_auto_heal_restores_user_tracked_products(tmp_path):
+def test_db_init_keeps_deactivated_user_products(tmp_path):
+    """Restart must not revive products the user or delisting deactivated (known issue #1, fixed 03/11)."""
     db_file = tmp_path / "test_auto_heal.db"
     db = DB(str(db_file))
     pid = db.add_product_url("https://lazada.vn/p_user", "lazada", "u1", source="user")
@@ -744,13 +745,8 @@ def test_db_auto_heal_restores_user_tracked_products(tmp_path):
         db.conn.commit()
     assert len(db.get_active_tracked_products()) == 0
 
-    # Re-initialize DB (triggers _migrate auto-heal)
     db2 = DB(str(db_file))
-    active_tracked = db2.get_active_tracked_products()
-    assert len(active_tracked) == 1
-    assert active_tracked[0]["id"] == pid
-    assert active_tracked[0]["active"] == 1
-    assert active_tracked[0]["fail_count"] == 0
+    assert db2.get_active_tracked_products() == []
 
 
 def test_subsystem_suspension_db_settings_and_price_error_suppression(tmp_path):

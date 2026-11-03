@@ -15,7 +15,8 @@ class Notifier:
     def __init__(self, config: Config):
         self._token = config.telegram_token
         self._admin_id = config.admin_chat_id
-        self._channel_id = config.telegram_channel_id
+        # ADR 0065: không có kênh thì cảnh báo giá về chat admin
+        self._channel_id = config.telegram_channel_id or config.admin_chat_id
 
     def alert_admin(self, text: str, reply_markup: dict | None = None) -> int | None:
         return self._send(self._admin_id, text, reply_markup=reply_markup)
@@ -53,6 +54,7 @@ class Notifier:
                 data = r.json()
                 if data.get("ok") and "result" in data:
                     return data["result"].get("message_id")
+            log.warning("Telegram sendMessage rejected (%s): %s", r.status_code, r.text[:200])
         except Exception as exc:
             log.warning("Telegram send failed: %s", exc)
         return None

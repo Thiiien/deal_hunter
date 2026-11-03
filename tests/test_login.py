@@ -98,4 +98,24 @@ def test_scanner_platform_isolated_auth(config, db):
     notifier.alert_admin.assert_called_once()
     assert "Lazada" in notifier.alert_admin.call_args[0][0]
     assert "cookies_lazada.json" in notifier.alert_admin.call_args[0][0]
+    # same missing cookie on the next cycle: logged, not re-sent (6h cooldown)
+    scanner.scan_all()
+    notifier.alert_admin.assert_called_once()
+
+
+def test_interactive_login_writes_platform_cookie_file(tmp_path, monkeypatch):
+    """Lazada login must land in cookies_lazada.json, the file check_session_valid reads."""
+    import json
+    from unittest.mock import MagicMock
+    from deal_hunter import login as login_mod
+    cookies = [{"name": "lzd_sid", "domain": ".lazada.vn"}, {"name": "t", "domain": ".lazada.vn"}, {"name": "cna", "domain": ".lazada.vn"}]
+    page = MagicMock(); page.is_closed.return_value = False; page.url = "https://www.lazada.vn/"
+    ctx = MagicMock(); ctx.cookies.return_value = cookies; ctx.new_page.return_value = page
+    browser = MagicMock(); browser.new_context.return_value = ctx
+    pw = MagicMock(); pw.chromium.launch.return_value = browser
+    cm = MagicMock(); cm.__enter__ = lambda s: pw; cm.__exit__ = lambda s, *a: False
+    monkeypatch.setattr(login_mod, "sync_playwright", lambda: cm)
+    assert login_mod.interactive_login("lazada", data_dir=str(tmp_path), timeout_sec=5)
+    assert json.loads((tmp_path / "cookies_lazada.json").read_text(encoding="utf-8")) == cookies
+    assert login_mod.check_session_valid(str(tmp_path), "lazada")
 

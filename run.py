@@ -62,9 +62,14 @@ def main():
         if saved in ("0", "1"):
             setattr(config, attr, saved == "1")
 
+    saved = db.get_setting("keyword_include_unknown")
+    if saved in ("0", "1"):
+        config.keyword_include_unknown = saved == "1"
+
     for key, attr in [
         ("tmall_min_price", "tmall_min_price"),
         ("tmall_max_price", "tmall_max_price"),
+        ("deal_min_original_price", "deal_min_original_price"),
     ]:
         saved = db.get_setting(key)
         if saved is not None:
@@ -114,12 +119,15 @@ def main():
         log.warning("TELEGRAM_TOKEN not set — bot disabled")
 
 
+    quota_day = time.strftime("%Y-%m-%d")
     while True:
         try:
             scanner.scan_due()
         except Exception as scan_err:
             log.exception("Scheduler scan_due error: %s", scan_err)
-        quota.reset()
+        if time.strftime("%Y-%m-%d") != quota_day:  # free captcha quota is per day
+            quota_day = time.strftime("%Y-%m-%d")
+            quota.reset()
         time.sleep(10)
 
 

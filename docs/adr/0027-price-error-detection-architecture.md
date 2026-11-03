@@ -47,3 +47,4 @@ Dựa trên tài liệu thiết kế chi tiết tại [PRICE_ERROR_DETECTION.md]
 ## Trạng thái
 - Bản thiết kế kiến trúc đã thống nhất qua phỏng vấn phản biện với người dùng.
 - Tiến hành hiện thực hóa mã nguồn Phase 1 theo quy chuẩn Ponytail.
+- Phân hệ đã hiện thực; đang tắt theo ADR 0055 và 0062.

@@ -104,6 +104,8 @@ def create_bot(
         url = canonicalize_url(url)
         try:
             platform = BaseAdapter.parse_platform(url)
+            if platform not in ("shopee", "lazada"):
+                raise ValueError(platform)
             item_key = BaseAdapter.parse_item_key(url)
         except Exception:
             bot.reply_to(msg, "⚠️ Link sản phẩm không hợp lệ (hỗ trợ Shopee và Lazada).")
@@ -314,14 +316,15 @@ def create_bot(
             pname = html.escape(p["name"] or f"Sản phẩm #{pid}") if p else f"Sản phẩm #{pid}"
             purl = linker.build(p["platform"], p["url"]) if p else ""
 
-            row = db.conn.execute("SELECT voucher_code, voucher_discount, final_price FROM price_history WHERE product_id=? ORDER BY ts DESC LIMIT 1", (pid,)).fetchone()
+            with db._lock:
+                row = db.conn.execute("SELECT voucher_code, voucher_discount, final_price FROM price_history WHERE product_id=? ORDER BY ts DESC LIMIT 1", (pid,)).fetchone()
             v_line = ""
             if row and row["voucher_code"]:
                 f_price = row["final_price"] or latest_price
                 disc = row["voucher_discount"] or 0
                 v_line = f"🎫 Mã giảm giá: <code>{row['voucher_code']}</code> (-{disc:,.0f}₫)\n💵 Giá sau áp mã: <b>{f_price:,.0f}₫</b>\n"
 
-            plat = (p.get("platform") or "shopee").lower() if p else "shopee"
+            plat = (p["platform"] or "shopee").lower() if p else "shopee"
             plat_badge = "🔵 [Lazada] " if plat == "lazada" else ("🟠 [Shopee] " if plat == "shopee" else "")
             bot.reply_to(msg, (
                 f"🏆 <b>{plat_badge}ĐÃ TÌM THẤY SẢN PHẨM GIÁ THẤP NHẤT!</b>\n\n"

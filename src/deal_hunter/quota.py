@@ -9,7 +9,6 @@ from .notifier import Notifier
 log = logging.getLogger(__name__)
 
 _NOPECHA_STATUS_URL = "https://api.nopecha.com/status"
-_WARN_THRESHOLD = 10   # send early-warning when credits ≤ 10
 _DEFAULT_FREE_DAILY_LIMIT = 10  # 10 free solves/day for NopeCHA extension free tier
 
 

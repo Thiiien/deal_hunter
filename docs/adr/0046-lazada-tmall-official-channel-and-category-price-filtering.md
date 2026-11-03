@@ -4,7 +4,7 @@ Date: 2026-10-29
 
 ## Status
 
-Accepted
+Accepted. Tab TMALL ẩn, phân hệ tắt theo ADR 0055.
 
 ## Context
 

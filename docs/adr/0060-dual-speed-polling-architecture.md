@@ -2,6 +2,7 @@
 
 ## Trạng thái
 Đã chấp thuận (Accepted)
+Chưa làm: tầng 1 chỉ có Shopee (Lazada luôn đi tầng 2); không chụp ảnh màn hình; adapter không tự lưu cookie mới ra file. Bổ sung 03/11/2026: tầng 2 lỗi thì bỏ qua lượt quét, không dùng giá tầng 1.
 
 ## Bối cảnh
 Người dùng cần săn các deal giảm giá sâu và sản phẩm bị lỗi giá (price error) trong thời gian ngắn nhất có thể (< 2 phút). Tuy nhiên:

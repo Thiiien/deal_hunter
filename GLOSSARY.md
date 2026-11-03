@@ -11,11 +11,11 @@ Sản phẩm do người dùng chủ động thêm vào danh sách (dán link tr
 _Avoid_: Sản phẩm quét ngầm, kết quả tìm kiếm tự thêm
 
 **Snapshot**:
-Bản ghi dữ liệu của một sản phẩm tại một lần quét: giá bán, giá niêm yết, giá sau áp mã, tồn kho, tên biến thể đang theo dõi, voucher, rating, lượt bán. Mọi nguồn dữ liệu (quét web, feed, dữ liệu giả) đều trả về cùng dạng này.
+Bản ghi dữ liệu của một sản phẩm tại một lần quét: giá bán, giá niêm yết, giá sau áp mã, tồn kho, tên biến thể đang theo dõi, voucher, rating, lượt bán. Snapshot từ mọi nguồn dữ liệu đều có cùng dạng này.
 _Avoid_: Crawl result, product state
 
 **Lịch sử giá (Price History)**:
-Chuỗi Snapshot theo thời gian của một sản phẩm. Nguyên tắc thiết kế: chỉ ghi thêm, không bao giờ ghi đè hay xóa; giá trị cốt lõi của công cụ nằm ở chuỗi này.
+Chuỗi Snapshot theo thời gian của một sản phẩm. Nguyên tắc thiết kế: chỉ ghi thêm, không bao giờ ghi đè hay xóa; giá trị cốt lõi của công cụ nằm ở chuỗi này. Chỉ giá thật lúc còn hàng mới được tính là giá: lượt quét hết hàng chỉ ghi nhận trạng thái tồn kho, không tham gia giá mới nhất hay trung vị.
 _Avoid_: Biến động giá, log giá
 
 **Giá trung vị 30 ngày (30-Day Median)**:
@@ -29,6 +29,10 @@ _Avoid_: Warm-up, learning period, thiếu dữ liệu
 **Deal thật (Real Deal)**:
 Sản phẩm có giá thực trả thấp hơn giá trung vị 30 ngày từ 30% trở lên (ngưỡng cấu hình được), còn hàng, và có giá trị thật tối thiểu đạt ngưỡng. Với sản phẩm khám phá tự động, thêm điều kiện rating sản phẩm từ 4.0 trở lên; với sản phẩm theo dõi, rating không được xét. Cảnh báo deal thật hiện đang tắt khi bật Chế độ chỉ thông báo đạt giá mong muốn.
 _Avoid_: Giảm giá ảo, sale sốc, sale ảo
+
+**Giá niêm yết (List Price)**:
+Giá gạch ngang sàn hiển thị cạnh giá bán. Chỉ ghi nhận khi trang có gạch giá thật; không lấy giá trần danh mục hay giá tự suy.
+_Avoid_: Suy giá niêm yết từ phần trăm giảm
 
 **Giá gốc ảo (Fake List Price)**:
 Người bán nâng giá niêm yết lên cao bất thường để hiển thị mức giảm sâu, trong khi giá bán không hề rẻ hơn lịch sử giá thực tế. Một sản phẩm giảm sâu theo giá niêm yết nhưng không giảm so với trung vị 30 ngày được gắn nhãn này.
@@ -55,7 +59,7 @@ Ngành hàng của sản phẩm, bóc từ thanh điều hướng của sàn, d�
 _Avoid_: Thể loại, tag ngành hàng
 
 **Nhóm theo danh mục (Category Grouping)**:
-Cách dashboard gom sản phẩm theo ngành hàng và xếp theo mức giảm giảm dần để so sánh nhanh.
+Cách tab Siêu Sale gom sản phẩm theo ngành hàng và xếp theo mức giảm giảm dần để so sánh nhanh. Tab Sản phẩm theo dõi không gom nhóm mà xếp mới nhất lên đầu.
 _Avoid_: Tag filter, list phẳng
 
 ## Theo dõi và cảnh báo
@@ -65,15 +69,15 @@ Mức giá tối đa người dùng đặt cho từng sản phẩm. Khi giá th�
 _Avoid_: Giá kỳ vọng, giá chốt, ngưỡng cảnh báo
 
 **Cảnh báo giá mong muốn tức thời (Instant Target Price Alert)**:
-Cảnh báo giá mong muốn không chịu cooldown: được gửi ở mỗi chu kỳ quét chừng nào giá còn nằm trong tầm giá mong muốn. Với chu kỳ 2 phút, một sản phẩm nằm dưới giá mục tiêu lâu sẽ sinh rất nhiều tin (xem Vấn đề đã biết trong brief).
-_Avoid_: Cooldown 24 giờ cho giá mong muốn
+Gửi khi giá thực trả bước vào tầm giá mong muốn (còn hàng). Gửi lại chỉ khi giá giảm thêm từ 5% trở lên, hoặc khi giá đã rời tầm rồi quay lại; ngoài ra nhắc một lần mỗi 24 giờ chừng nào giá còn trong tầm, để người dùng biết hệ thống vẫn chạy. Gửi lên Kênh phát sóng; không có kênh thì gửi cho admin.
+_Avoid_: Báo ở mỗi chu kỳ quét, Cooldown 24 giờ cứng
 
 **Chế độ chỉ thông báo đạt giá mong muốn (Target-Price-Only Alert Mode)**:
 Chế độ mặc định hiện nay: chỉ gửi cảnh báo giá mong muốn; tắt cảnh báo giảm giá thường, deal thật và nghi lỗi giá. Cảnh báo kỹ thuật cho admin (hết hạn phiên, captcha, sản phẩm bị xóa) không bị ảnh hưởng. Bật tắt trong Cài đặt dashboard.
 _Avoid_: Tắt toàn bộ thông báo
 
 **Cảnh báo giảm giá cho sản phẩm theo dõi (Tracked Price-Drop Alert)**:
-Thông báo cho admin khi giá thực trả của sản phẩm theo dõi giảm so với lần quét trước (từ 5.000₫ hoặc 3% trở lên, cooldown 24 giờ), kể cả khi chưa đủ lịch sử. Hiện đang tắt theo Chế độ chỉ thông báo đạt giá mong muốn.
+Thông báo lên kênh phát sóng khi giá thực trả của sản phẩm theo dõi giảm so với lần quét trước (từ 5.000₫ hoặc 3% trở lên, cooldown 24 giờ), kể cả khi chưa đủ lịch sử. Hiện đang tắt theo Chế độ chỉ thông báo đạt giá mong muốn.
 _Avoid_: Spam kênh deal chung
 
 **Tần suất quét (Scan Interval)**:
@@ -121,7 +125,7 @@ Không gửi bất kỳ cảnh báo giá nào khi sản phẩm hết hàng.
 _Avoid_: Tắt bot
 
 **Tự động hủy theo dõi deal hết hàng (Auto-deactivate Sold-out Deals)**:
-Sản phẩm thu thập từ Flash Sale được tự động ngưng theo dõi khi hết hàng hoặc hết đợt, để không làm rác dashboard. Không áp cho sản phẩm theo dõi.
+Sản phẩm thu thập từ Flash Sale được tự động ngưng theo dõi khi hết hàng, để không làm rác dashboard. Không áp cho sản phẩm theo dõi.
 _Avoid_: Xóa sản phẩm
 
 ## Biến thể
@@ -163,7 +167,7 @@ Việc đổi trạng thái tồn kho và biến thể diễn ra trong dữ li�
 _Avoid_: Thông báo mỗi lần đổi biến thể
 
 **Dò biến thể (Variant Probing)**:
-Với sản phẩm theo dõi có nhiều biến thể, trình duyệt bấm qua từng ô biến thể ở mỗi lần quét để đọc giá và tồn kho thực. Tốn thời gian hơn nhưng bảo đảm chọn đúng biến thể rẻ nhất còn hàng.
+Với sản phẩm theo dõi có nhiều biến thể trên Lazada, và khi xác thực tầng 2, trình duyệt bấm qua từng ô biến thể để đọc giá và tồn kho thực; Shopee bình thường lấy biến thể từ dữ liệu API. Tốn thời gian hơn nhưng bảo đảm chọn đúng biến thể rẻ nhất còn hàng.
 _Avoid_: Tin dữ liệu tĩnh của trang về giá từng biến thể
 
 ## Voucher và giá thực trả
@@ -172,12 +176,12 @@ _Avoid_: Tin dữ liệu tĩnh của trang về giá từng biến thể
 Mã do shop hoặc sàn phát cho sản phẩm, giảm theo phần trăm hoặc số tiền, có điều kiện đơn tối thiểu và mức giảm tối đa.
 _Avoid_: Coupon rác, quà tặng
 
-**Giá thực trả (Final Price After Voucher)**:
-Giá sau khi trừ tổ hợp voucher tốt nhất mà sản phẩm đủ điều kiện. Đây là giá dùng để so với giá mong muốn, tính trung vị 30 ngày và hiển thị cho người mua.
-_Avoid_: Giá net, giá sau sale
+**Giá thực trả (Effective Price)**:
+Giá bán sau khi trừ voucher shop hoặc sàn có ghi rõ mức giảm. Không tính hoàn xu hay cashback, vì chúng chỉ trả lại sau khi mua. Đây là giá dùng để so với giá mong muốn, tính trung vị 30 ngày và hiển thị cho người mua.
+_Avoid_: Giá net, giá sau sale, cộng hoàn xu vào giảm giá
 
 **Cộng dồn voucher đa tầng (Voucher Stacking)**:
-Áp đồng thời tối đa một mã ở mỗi tầng không xung đột: voucher shop, voucher sàn hoặc trợ giá nền tảng, ưu đãi xu hoặc hoàn tiền. Mã trùng được khử trước khi cộng.
+Áp đồng thời tối đa một mã ở mỗi tầng không xung đột: voucher shop, voucher sàn hoặc trợ giá nền tảng. Ưu đãi xu hoặc hoàn tiền không cộng vào giá thực trả. Mã trùng được khử trước khi cộng.
 _Avoid_: Chọn một voucher duy nhất, cộng dồn không kiểm soát
 
 **Chống chiết khấu kép (Double Discount Prevention)**:
@@ -191,7 +195,7 @@ _Avoid_: Gộp vào voucher shop
 ## Phiên đăng nhập và captcha
 
 **Cookie đăng nhập lưu trữ (Saved Cookies)**:
-Cookie phiên của tài khoản sàn, xuất từ trình duyệt người dùng hoặc từ lần đăng nhập tương tác, được trình duyệt trong Docker nạp để vượt tường chặn khách. Mỗi sàn một bộ cookie riêng.
+Cookie phiên của tài khoản sàn, xuất từ trình duyệt người dùng hoặc từ lần đăng nhập tương tác, được trình duyệt quét nạp để vượt tường chặn khách khi chạy không có màn hình. Mỗi sàn một bộ cookie riêng.
 _Avoid_: Mật khẩu lưu trữ, auth token
 
 **Xác thực phiên đa sàn (Per-Platform Session)**:
@@ -199,7 +203,7 @@ Cookie của Shopee và Lazada được lưu, kiểm tra và báo lỗi độc l
 _Avoid_: Gộp cookie, ngắt toàn bộ scanner
 
 **Kiểm tra phiên trước quét (Pre-flight Session Check)**:
-Trước mỗi chu kỳ, hệ thống kiểm tra cookie từng sàn còn hiệu lực. Khi chạy có màn hình, nó mở đăng nhập tương tác; trong Docker không có màn hình, nó báo admin cấp cookie mới.
+Trước mỗi chu kỳ, hệ thống kiểm tra cookie từng sàn còn hiệu lực. Phiên hết hạn thì báo admin cấp cookie mới, tối đa một lần mỗi 6 giờ cho mỗi sàn; không bao giờ tự mở đăng nhập tương tác từ vòng quét.
 _Avoid_: Healthcheck sàn
 
 **Tự động nhận diện đăng nhập (Auto-detect Login)**:
@@ -207,7 +211,7 @@ Trong đăng nhập tương tác, hệ thống nhận ra người dùng đã đ�
 _Avoid_: Tự động điền mật khẩu
 
 **Chặn Captcha (Captcha Intercept)**:
-Sàn chặn dữ liệu bằng thử thách xác minh (thanh trượt, puzzle, reCAPTCHA). Thứ tự xử lý: dùng cookie sẵn có; nếu trang vẫn bị chặn, tự kéo thanh trượt mô phỏng người thật; rồi chờ tiện ích NopeCHA trong trình duyệt tối đa 15 giây. Thất bại thì coi là Lỗi sàn diện rộng.
+Sàn chặn dữ liệu bằng thử thách xác minh (thanh trượt, puzzle, reCAPTCHA). Thứ tự xử lý: dùng cookie sẵn có; nếu trang vẫn bị chặn, tự kéo thanh trượt mô phỏng người thật; rồi chờ tiện ích NopeCHA trong trình duyệt tối đa 15 giây. Thất bại thì coi là Lỗi sàn diện rộng; sau 3 link liên tiếp bị chặn thì dừng sàn đó trong chu kỳ.
 _Avoid_: Bot block, rate limit
 
 **Hạn ngạch giải mã (Solver Quota)**:
@@ -215,7 +219,7 @@ Số lượt NopeCHA giải captcha còn lại: 10 lượt mỗi ngày với ti�
 _Avoid_: Số lần cào, giới hạn request
 
 **Lỗi sàn diện rộng (Platform-Wide Block)**:
-Sự cố cấp toàn sàn (phiên hết hạn, captcha không giải được, lỗi xác thực của cổng API) khiến hệ thống dừng quét phần còn lại của sàn đó trong chu kỳ. Phân biệt với lỗi của một link cá biệt, chỉ bỏ qua link đó.
+Sự cố cấp toàn sàn (phiên hết hạn, captcha không giải được, lỗi xác thực của cổng API) khiến hệ thống dừng quét phần còn lại của sàn đó trong chu kỳ; captcha cũng tính là lỗi sàn sau 3 link liên tiếp bị chặn. Phân biệt với lỗi của một link cá biệt, chỉ bỏ qua link đó.
 _Avoid_: Tính lỗi sàn vào số lỗi của từng sản phẩm
 
 **Cảnh báo lỗi kép (Dual Failure Alert)**:
@@ -223,13 +227,13 @@ Cảnh báo khẩn gửi admin chỉ khi cả cookie lẫn bộ giải captcha c
 _Avoid_: Báo hết lượt khi vẫn cào được
 
 **Phục hồi phiên (Session Recovery)**:
-Khi tầng quét nhanh gặp phiên hết hạn hoặc captcha, hệ thống chuyển sang trình duyệt đầy đủ để giải thử thách và quét tiếp. Hệ thống không tự đăng nhập lại và không tự lưu cookie mới: cookie hết hạn thật sự thì admin phải cấp lại.
+Khi tầng quét nhanh gặp phiên hết hạn hoặc captcha, hệ thống chuyển sang trình duyệt đầy đủ để giải thử thách và quét tiếp. Hệ thống không tự đăng nhập lại và không tự lưu cookie mới: cookie hết hạn thật sự thì admin được báo tối đa một lần mỗi 6 giờ cho mỗi sàn và phải cấp lại. Đăng nhập tương tác chỉ chạy khi người dùng bấm từ dashboard hoặc chạy lệnh đăng nhập, không bao giờ từ vòng quét.
 _Avoid_: Tự làm mới cookie
 
 ## Phân hệ khám phá (hiện đang tắt)
 
 **Tạm dừng quét phân hệ tự động (Subsystem Scan Suspension)**:
-Trạng thái hiện tại: quét nền theo từ khóa, siêu sale, lỗi giá và TMALL đều tắt qua Cài đặt, tab tương ứng ẩn khỏi dashboard, không gửi Telegram từ các phân hệ này. Toàn bộ tài nguyên và hạn ngạch captcha dành cho sản phẩm theo dõi. Bật lại bằng một công tắc trong Cài đặt, không cần triển khai lại.
+Trạng thái hiện tại: quét nền theo từ khóa, siêu sale, lỗi giá và TMALL đều tắt qua Cài đặt; ba tab Nghi lỗi giá, Theo từ khóa, TMALL ẩn khỏi dashboard, tab Siêu Sale còn hiện để cào thủ công; không gửi Telegram từ các phân hệ này. Toàn bộ tài nguyên và hạn ngạch captcha dành cho sản phẩm theo dõi. Bật lại bằng một công tắc trong Cài đặt, không cần triển khai lại.
 _Avoid_: Sửa code để dừng một phân hệ
 
 **Khám phá và Theo dõi (Discover & Track)**:

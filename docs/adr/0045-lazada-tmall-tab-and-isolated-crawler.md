@@ -40,3 +40,4 @@ Người dùng muốn theo dõi và gom nhóm các sản phẩm từ chuyên tra
 ## Trạng thái
 - Đã được thống nhất qua quy trình `/grill-with-docs`.
 - Triển khai code vào hệ thống.
+- Tab TMALL ẩn, phân hệ tắt theo ADR 0055.

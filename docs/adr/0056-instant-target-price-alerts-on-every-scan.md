@@ -5,6 +5,7 @@ Date: 2026-11-01
 ## Trạng thái
 
 Accepted (Đã thống nhất qua quy trình `/grill-with-docs`)
+Chu kỳ quét là 2 phút theo ADR 0060. Superseded bởi ADR 0065 (03/11/2026): không còn gửi ở mỗi chu kỳ quét.
 
 ## Bối cảnh
 

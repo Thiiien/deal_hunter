@@ -36,3 +36,4 @@ Trước đây, chức năng tìm kiếm sản phẩm theo từ khóa (`search()
 
 ## Trạng thái
 Đã hoàn thành kiểm thử đơn vị và triển khai trên toàn bộ hệ thống.
+Từ ADR 0055 và 0057 (01/11/2026): cào Siêu Sale chỉ chạy khi người dùng bấm nút và không phát cảnh báo Telegram; quét nền theo từ khóa đang tắt.

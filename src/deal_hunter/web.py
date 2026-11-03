@@ -155,6 +155,8 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
         from .adapters.playwright import canonicalize_url
         url = canonicalize_url(url)
         platform = BaseAdapter.parse_platform(url)
+        if platform not in ("shopee", "lazada"):
+            return jsonify({"error": "Chỉ hỗ trợ link Shopee và Lazada"}), 400
         item_key = BaseAdapter.parse_item_key(url)
         pid = db.add_product_url(url, platform, item_key, source="user")
         target_price = data.get("target_price")
@@ -413,7 +415,8 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
             p = db.get_product(pids[0])
             if p:
                 latest_price = db.get_latest_price(pids[0])
-                row = db.conn.execute("SELECT voucher_code, voucher_discount, final_price FROM price_history WHERE product_id=? ORDER BY ts DESC LIMIT 1", (pids[0],)).fetchone()
+                with db._lock:
+                    row = db.conn.execute("SELECT voucher_code, voucher_discount, final_price FROM price_history WHERE product_id=? ORDER BY ts DESC LIMIT 1", (pids[0],)).fetchone()
                 best_deal = {
                     "id": p["id"],
                     "name": p["name"],

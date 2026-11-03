@@ -4,7 +4,7 @@ Date: 2026-10-29
 
 ## Status
 
-Accepted
+Accepted. Các tab khám phá ẩn theo ADR 0055; chu kỳ quét sản phẩm theo dõi là 2 phút theo ADR 0060 (thay cho "8-15 phút" ở mục 2).
 
 ## Context
 

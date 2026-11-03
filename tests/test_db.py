@@ -164,6 +164,42 @@ def test_delete_product_db(db):
     assert db.get_alert(pid) is None
 
 
+def test_delete_product_removes_variant_rows(db):
+    """Foreign keys are not enforced, so children must be deleted explicitly."""
+    from deal_hunter.models import VariantInfo
+    snap = _snapshot()
+    pid = db.upsert_product_meta(snap)
+    db.upsert_variants(pid, [VariantInfo(variant_key="k1", name="Đỏ", price=100_000, stock_state="in")])
+    with db._lock:
+        assert db.conn.execute("SELECT COUNT(*) FROM variants WHERE product_id=?", (pid,)).fetchone()[0] == 1
+    db.delete_product(pid)
+    with db._lock:
+        assert db.conn.execute("SELECT COUNT(*) FROM variants WHERE product_id=?", (pid,)).fetchone()[0] == 0
+        assert db.conn.execute("SELECT COUNT(*) FROM variant_history").fetchone()[0] == 0
+
+
+def test_scan_result_does_not_reactivate_product(db):
+    """A late scan result (fast-verify timer) must not revive a product delisted meanwhile."""
+    snap = _snapshot()
+    pid = db.upsert_product_meta(snap)
+    with db._lock:
+        db.conn.execute("UPDATE products SET active=0 WHERE id=?", (pid,))
+        db.conn.commit()
+    db.update_product_from_snapshot(pid, snap)
+    assert db.get_product(pid)["active"] == 0
+
+
+def test_out_of_stock_price_zero_is_not_a_price(db):
+    """Out-of-stock rows (price 0) must not become the latest price or pollute the 30-day history."""
+    pid = db.upsert_product_meta(_snapshot())
+    db.save_snapshot(pid, _snapshot(price=100_000))
+    out = _snapshot(price=0.0)
+    out.stock = False
+    db.save_snapshot(pid, out)
+    assert db.get_latest_price(pid) == 100_000
+    assert db.get_price_history_30d(pid) == [100_000]
+
+
 def test_delete_products_bulk_db(db):
     snap1 = _snapshot(item_key="1.1")
     snap2 = _snapshot(item_key="2.2")

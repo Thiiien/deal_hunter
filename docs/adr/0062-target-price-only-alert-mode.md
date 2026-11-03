@@ -2,6 +2,7 @@
 
 ## Trạng thái
 Đã chấp thuận (Accepted)
+Từ 03/11/2026 mặc định trong mã là bật (True).
 
 ## Bối cảnh
 1. Người dùng đang theo dõi nhiều sản phẩm trên các sàn thương mại điện tử (Shopee, Lazada). Hiện tại hệ thống phát nhiều loại thông báo qua kênh Telegram:

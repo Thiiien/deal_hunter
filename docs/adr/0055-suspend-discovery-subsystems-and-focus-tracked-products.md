@@ -5,6 +5,7 @@ Date: 2026-11-01
 ## Trạng thái
 
 Accepted (Đã thống nhất qua quy trình `/grill-with-docs`)
+Mục 3 (bảo lưu cảnh báo giảm giá theo lịch sử) đã tắt theo ADR 0062.
 
 ## Bối cảnh
 

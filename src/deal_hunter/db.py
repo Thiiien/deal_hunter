@@ -325,9 +325,6 @@ class DB:
                     outcome            TEXT    NOT NULL DEFAULT ''
                 )
             """)
-            # Auto-healing: restore user-tracked products wrongfully deactivated by legacy failure limit
-            self.conn.execute("UPDATE products SET active = 1, fail_count = 0 WHERE source = 'user' AND active = 0")
-
             # Canonicalize all stored product URLs
             from .adapters.playwright import canonicalize_url
             for row in self.conn.execute("SELECT id, url FROM products WHERE url IS NOT NULL").fetchall():
@@ -335,15 +332,6 @@ class DB:
                 cu = canonicalize_url(u)
                 if cu != u:
                     self.conn.execute("UPDATE products SET url = ? WHERE id = ?", (cu, pid))
-
-            # Mark permanently delisted / 404 products as inactive
-            self.conn.execute("UPDATE products SET active = 0, fail_count = 0 WHERE name LIKE '%Sản phẩm này không còn tồn tại%' OR name LIKE '%không còn tồn tại%'")
-
-            # Reset main_variant_id for user products to ensure dynamic lowest in-stock variant selection
-            self.conn.execute("UPDATE products SET main_variant_id = NULL WHERE source = 'user'")
-
-            # Clean historical fake ceiling list prices (pdt_price inflation)
-            self.conn.execute("UPDATE price_history SET list_price = NULL WHERE list_price >= 3500000 AND price < 1500000 AND list_price IN (4049000.0, 5642000.0, 4837000.0, 5598000.0, 3536000.0, 5154000.0)")
 
             self.conn.commit()
 
@@ -441,8 +429,7 @@ class DB:
                        ships_from = CASE WHEN ? != '' THEN ? ELSE ships_from END,
                        services = CASE WHEN ? != '' THEN ? ELSE services END,
                        verified = COALESCE(?, verified),
-                       fail_count = 0,
-                       active = 1
+                       fail_count = 0
                    WHERE id = ?""",
                 (
                     snapshot.item_key,
@@ -890,7 +877,7 @@ class DB:
     def get_latest_price(self, product_id: int) -> float | None:
         with self._lock:
             row = self.conn.execute(
-                "SELECT price FROM price_history WHERE product_id=? ORDER BY ts DESC LIMIT 1",
+                "SELECT price FROM price_history WHERE product_id=? AND price > 0 ORDER BY ts DESC LIMIT 1",
                 (product_id,),
             ).fetchone()
             return row["price"] if row else None
@@ -904,7 +891,7 @@ class DB:
         with self._lock:
             rows = self.conn.execute(
                 """SELECT COALESCE(final_price, price) FROM price_history
-                   WHERE product_id=? AND ts >= datetime('now', '-30 days')
+                   WHERE product_id=? AND price > 0 AND ts >= datetime('now', '-30 days')
                    ORDER BY ts DESC""",
                 (product_id,),
             ).fetchall()
@@ -939,6 +926,11 @@ class DB:
                 "SELECT last_price, sent_at FROM alerts WHERE product_id=?",
                 (product_id,),
             ).fetchone()
+
+    def clear_alert(self, product_id: int):
+        with self._lock:
+            self.conn.execute("DELETE FROM alerts WHERE product_id=?", (product_id,))
+            self.conn.commit()
 
     def upsert_alert(self, product_id: int, price: float):
         with self._lock:
@@ -1021,8 +1013,10 @@ class DB:
             return
         with self._lock:
             placeholders = ",".join("?" for _ in product_ids)
-            self.conn.execute(f"DELETE FROM price_history WHERE product_id IN ({placeholders})", product_ids)
-            self.conn.execute(f"DELETE FROM alerts WHERE product_id IN ({placeholders})", product_ids)
+            # foreign keys are not enforced in this connection: delete children explicitly
+            self.conn.execute(f"DELETE FROM variant_history WHERE variant_id IN (SELECT id FROM variants WHERE product_id IN ({placeholders}))", product_ids)
+            for table in ("price_history", "alerts", "variants", "fallback_rules", "fallback_events", "price_anomalies", "keyword_products"):
+                self.conn.execute(f"DELETE FROM {table} WHERE product_id IN ({placeholders})", product_ids)
             self.conn.execute(f"DELETE FROM products WHERE id IN ({placeholders})", product_ids)
             self.conn.commit()
 

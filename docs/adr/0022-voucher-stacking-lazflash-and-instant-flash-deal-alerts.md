@@ -35,3 +35,4 @@ Nhằm nâng cao hiệu quả săn deal và đáp ứng yêu cầu tìm kiếm c
 ## Trạng thái
 - Đạt 106/106 automated tests trong toàn bộ test suite.
 - Sẵn sàng đồng bộ môi trường container production.
+- Mục 3 (Instant Flash Deal Alerts) bị thay thế bởi ADR 0057; hàm cảnh báo flash deal không còn được gọi.

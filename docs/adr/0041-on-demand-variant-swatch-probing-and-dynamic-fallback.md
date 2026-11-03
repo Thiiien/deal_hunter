@@ -3,6 +3,7 @@
 ## Trạng thái
 
 Accepted, mở rộng bởi ADR 0053: sản phẩm theo dõi bấm qua mọi ô biến thể ở mỗi lần quét, không chỉ khi hết hàng.
+Chỉ áp cho Lazada và cho xác thực tầng 2 (bấm qua ô biến thể); tầng 1 của Shopee lấy biến thể từ dữ liệu API (ADR 0060).
 
 ## Bối cảnh
 1. **Lệch giá giữa MTOP payload và giao diện DOM của Lazada:**

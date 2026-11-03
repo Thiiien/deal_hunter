@@ -112,6 +112,15 @@ def test_quota_monitor_warning_threshold(mock_get):
 # ── Notifier ─────────────────────────────────────────────────────────────────
 
 @patch("deal_hunter.notifier.httpx.post")
+def test_notifier_broadcast_falls_back_to_admin(mock_post):
+    """ADR 0065: without a channel, target-price alerts go to the admin chat instead of nowhere."""
+    mock_post.return_value = MagicMock(status_code=200, json=lambda: {"ok": True, "result": {"message_id": 1}})
+    n = Notifier(Config(telegram_token="t", admin_chat_id="42", telegram_channel_id=""))
+    assert n.broadcast_deal("hi") == 1
+    assert mock_post.call_args.kwargs["json"]["chat_id"] == "42"
+
+
+@patch("deal_hunter.notifier.httpx.post")
 def test_notifier_calls(mock_post):
     cfg = Config(telegram_token="dummy-tok", admin_chat_id="111", telegram_channel_id="@channel")
     n = Notifier(cfg)
@@ -125,6 +134,14 @@ def test_notifier_calls(mock_post):
 
 
 # ── Web App ──────────────────────────────────────────────────────────────────
+
+def test_web_rejects_non_marketplace_url(config, db):
+    """The server browser must never be pointed at an arbitrary URL."""
+    client = create_app(config, db, MagicMock()).test_client()
+    r = client.post("/api/products", json={"url": "http://10.0.0.5:8080/admin"})
+    assert r.status_code == 400
+    assert db.get_active_products() == []
+
 
 def test_web_routes(config, db):
     scanner = MagicMock()

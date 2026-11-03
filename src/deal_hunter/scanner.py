@@ -1,3 +1,5 @@
+import html
+
 import logging
 
 import random
@@ -147,6 +149,8 @@ class Scanner:
         self._linker = AffiliateLinker(config)
 
         self._scan_lock = threading.Lock()
+        self._product_lock = threading.RLock()  # scheduled, fast-verify and on-demand scans never overlap
+        self._auth_alert_at: dict[str, float] = {}
 
         self._verify_lock = threading.Lock()
 
@@ -710,6 +714,13 @@ class Scanner:
 
 
 
+    def _alert_auth(self, key: str, msg: str):
+        """Missing-cookie alert at most once per 6 h per platform (ADR 0065 docs: Phục hồi phiên)."""
+        log.warning(msg)
+        if time.time() - self._auth_alert_at.get(key, 0.0) >= 6 * 3600:
+            self._auth_alert_at[key] = time.time()
+            self._notifier.alert_admin(msg)
+
     def scan_all(self) -> dict:
 
         """Run one full scan cycle. Returns {"ok": n, "fail": n}."""
@@ -744,9 +755,7 @@ class Scanner:
 
                     )
 
-                    log.warning(msg)
-
-                    self._notifier.alert_admin(msg)
+                    self._alert_auth("all", msg)
 
                     return {"ok": 0, "fail": 0, "msg": "auth_required"}
 
@@ -999,6 +1008,10 @@ class Scanner:
 
 
     def scan_product(self, product_id: int) -> Snapshot | None:
+        with self._product_lock:
+            return self._scan_product_locked(product_id)
+
+    def _scan_product_locked(self, product_id: int) -> Snapshot | None:
 
         p = self._db.get_product(product_id)
 
@@ -1066,8 +1079,11 @@ class Scanner:
                         verified_snap = self._adapter.fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
                         if verified_snap and verified_snap.price is not None and verified_snap.price > 0:
                             snapshot = verified_snap
+                except Blocked:
+                    raise
                 except Exception as esc_err:
-                    log.warning("Tier-2 verification error for #%d: %s", product_id, esc_err)
+                    log.warning("Tier-2 verification error for #%d, skipping this cycle: %s", product_id, esc_err)
+                    return None
 
         except ProductDelisted as delist_err:
 
@@ -1172,14 +1188,17 @@ class Scanner:
         alerted = False
 
         if target_price is not None and effective_price is not None and effective_price <= target_price and snapshot.stock is not False:
-
-            link = self._linker.build(p["platform"], snapshot.url)
-
-            self._send_target_alert(snapshot, target_price, link, campaign=current_campaign)
-
-            self._alerter.record(product_id, effective_price)
-
+            # ADR 0065: alert on entry, on a further ≥5% drop, and as a 24h reminder
+            if self._alerter.should_alert(product_id, effective_price):
+                link = self._linker.build(p["platform"], snapshot.url)
+                self._send_target_alert(snapshot, target_price, link, campaign=current_campaign)
+                self._alerter.record(product_id, effective_price)
             alerted = True
+        elif target_price is not None:
+            # left the target range: forget the target alert so re-entry alerts immediately
+            last = self._db.get_alert(product_id)
+            if last and last["last_price"] <= target_price:
+                self._db.clear_alert(product_id)
 
         only_target_alerts = self._is_subsystem_enabled("only_target_price_alerts", default=False)
 
@@ -1285,9 +1304,7 @@ class Scanner:
 
                     )
 
-                    log.warning(msg)
-
-                    self._notifier.alert_admin(msg)
+                    self._alert_auth(platform, msg)
 
                     return 0, len(products)
 
@@ -1467,7 +1484,7 @@ class Scanner:
 
         text = (
 
-            f"🔥 <b>{plat_badge}{tag}{snapshot.name}</b>\n\n"
+            f"🔥 <b>{plat_badge}{tag}{html.escape(snapshot.name or '')}</b>\n\n"
 
             f"{category_line}"
 
@@ -1511,7 +1528,7 @@ class Scanner:
 
             f"🎯 <b>{plat_badge}{tag}ĐẠT GIÁ MONG MUỐN!</b>\n\n"
 
-            f"📦 <b>{snapshot.name}</b>\n"
+            f"📦 <b>{html.escape(snapshot.name or '')}</b>\n"
 
             f"{category_line}"
 
@@ -1555,7 +1572,7 @@ class Scanner:
 
             f"📉 <b>{plat_badge}{tag}GIẢM GIÁ SẢN PHẨM THEO DÕI!</b>\n\n"
 
-            f"📦 <b>{snapshot.name}</b>\n"
+            f"📦 <b>{html.escape(snapshot.name or '')}</b>\n"
 
             f"{category_line}"
 

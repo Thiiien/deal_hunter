@@ -237,16 +237,12 @@ def test_voucher_stacking_multi_tier():
         {"voucher_code": "COIN_10PCT", "voucher_type": "coins", "min_spend": 50_000, "discount_percentage": 10, "discount_cap": 25_000, "is_vnd": True},
         {"voucher_code": "BONUS_15K", "voucher_type": "platform", "min_spend": 150_000, "discount_value": 15_000, "is_vnd": True},
     ]
-    # At 200,000₫:
-    # Shop: best is SHOP_30K (30,000₫)
-    # Coins: COIN_10PCT is 20,000₫
-    # Platform: BONUS_15K is 15,000₫
-    # Stacking all 3 tiers: 30k + 20k + 15k = 65,000₫
+    # At 200,000₫: shop SHOP_30K + platform BONUS_15K; coins never lower the price paid
     code, disc = _find_best_voucher(200_000.0, vouchers)
     assert "SHOP_30K" in code
-    assert "COIN_10PCT" in code
+    assert "COIN_10PCT" not in code
     assert "BONUS_15K" in code
-    assert disc == 65_000.0
+    assert disc == 45_000.0
 
 
 def test_parse_shopee_extracts_voucher(config):
@@ -683,9 +679,18 @@ def test_parse_super_subsidy_vouchers():
     code, disc = _find_best_voucher(741000.0, [v_mom, v_shop, v_coin], allow_stacking=True)
     assert "MOMCLUB" in code
     assert "SHOP" in code
-    assert "COIN" in code
-    # MOMCLUB: 629850, Shop: 50000, Coin 5%: 37050 -> Total: 716900
-    assert disc == 716900.0
+    assert "COIN" not in code
+    # MOMCLUB: 629850, Shop: 50000; coins excluded -> Total: 679850
+    assert disc == 679850.0
+
+
+def test_coins_badges_never_lower_effective_price():
+    """1.000.000₫ item with 'Hoàn 10% xu' + 'Giảm 12%' badges: only the real 12% counts."""
+    from deal_hunter.adapters.playwright import _parse_lazada_voucher_text, _find_best_voucher
+    vouchers = [_parse_lazada_voucher_text(t) for t in ("Hoàn 10% xu", "Giảm 12%")]
+    code, disc = _find_best_voucher(1_000_000.0, [v for v in vouchers if v], allow_stacking=True)
+    assert "COIN" not in code and "CASHBACK" not in code
+    assert disc == 120_000.0
 
 
 def test_parse_lazada_with_mtop_payload(config):

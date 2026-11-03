@@ -33,3 +33,4 @@ Khi mở rộng sang Lazada, người dùng cũng cần săn các deal chớp nh
 
 ## Trạng thái
 Đã thống nhất qua quy trình `/grill-with-docs` và phê duyệt triển khai.
+Từ ADR 0055 và 0057 (01/11/2026): cào Siêu Sale chỉ chạy khi người dùng bấm nút và không phát cảnh báo Telegram; quét nền theo từ khóa đang tắt.

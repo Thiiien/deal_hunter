@@ -360,11 +360,111 @@ def test_target_price_triggers_alert(config, db):
 
 
 
-    # Second scan with same price also sends alert immediately (bypasses 24h / 5% cooldown)
+    # ADR 0065: same price again within 24h is not repeated
 
     scanner.scan_all()
 
+    assert notifier.broadcast_deal.call_count == 1
+
+
+
+
+
+def test_target_alert_repeats_on_further_drop_and_reentry(config, db):
+
+    """ADR 0065: alert again on ≥5% further drop, and after leaving and re-entering the target range."""
+
+    pid = _add_product(db)
+
+    db.set_target_price(pid, 80_000)
+
+    scanner, notifier = _make_scanner(config, db, prices=[79_000, 79_000, 70_000, 90_000, 79_000])
+
+    scanner.scan_all()   # 79k: enters range -> alert
+
+    scanner.scan_all()   # 79k: unchanged -> silent
+
+    assert notifier.broadcast_deal.call_count == 1
+
+    scanner.scan_all()   # 70k: >=5% further drop -> alert
+
     assert notifier.broadcast_deal.call_count == 2
+
+    scanner.scan_all()   # 90k: leaves range -> silent, state forgotten
+
+    assert notifier.broadcast_deal.call_count == 2
+
+    scanner.scan_all()   # 79k: re-entry -> alert
+
+    assert notifier.broadcast_deal.call_count == 3
+
+
+
+
+
+def test_tier2_failure_skips_cycle(config, db):
+
+    """ADR 0060: when the tier-2 verifier fails, the unverified tier-1 price is neither saved nor alerted."""
+
+    from deal_hunter.adapters.base import FetchError
+
+    from deal_hunter.models import Snapshot
+
+    pid = _add_product(db)
+
+    db.set_target_price(pid, 80_000)
+
+    adapter = MagicMock()
+
+    adapter.ensure_authenticated.return_value = True
+
+    adapter.fast_fetch.return_value = Snapshot(platform="shopee", item_key="111.222", url="https://shopee.vn/p-i.111.222", name="P", shop="S", price=70_000, list_price=None, stock=True)
+
+    adapter.fetch.side_effect = FetchError("captcha")
+
+    notifier = MagicMock(spec=Notifier)
+
+    quota = MagicMock(spec=QuotaMonitor)
+
+    quota.is_exhausted = False
+
+    scanner = Scanner(config, adapter, db, notifier, quota)
+
+    assert scanner.scan_product(pid) is None
+
+    notifier.broadcast_deal.assert_not_called()
+
+    assert db.get_latest_price(pid) is None
+
+
+
+
+
+def test_target_alert_escapes_html_in_name(config, db):
+
+    from deal_hunter.models import Snapshot
+
+    pid = _add_product(db)
+
+    db.set_target_price(pid, 80_000)
+
+    adapter = MagicMock(spec=["fetch", "ensure_authenticated"])
+
+    adapter.ensure_authenticated.return_value = True
+
+    adapter.fetch.return_value = Snapshot(platform="shopee", item_key="111.222", url="https://shopee.vn/p-i.111.222", name="Combo <Hàng chính hãng>", shop="S", price=75_000, list_price=None, stock=True)
+
+    notifier = MagicMock(spec=Notifier)
+
+    quota = MagicMock(spec=QuotaMonitor)
+
+    quota.is_exhausted = False
+
+    Scanner(config, adapter, db, notifier, quota).scan_product(pid)
+
+    msg = notifier.broadcast_deal.call_args[0][0]
+
+    assert "&lt;Hàng chính hãng&gt;" in msg
 
 
 

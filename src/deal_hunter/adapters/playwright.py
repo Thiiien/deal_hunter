@@ -269,8 +269,8 @@ class PlaywrightAdapter(BaseAdapter):
         return self._load_saved_cookies(p)
 
     def ensure_authenticated(self, platform: str = "all") -> bool:
-        """Verify session for platform(s). If missing/invalid and GUI display available, auto-open login."""
-        from ..login import check_session_valid, has_display, interactive_login
+        """Verify saved session for platform(s). Interactive login is only started from the dashboard or `login`."""
+        from ..login import check_session_valid
         data_dir = str(Path(self._config.db_path).parent)
 
         if platform == "all":
@@ -278,18 +278,7 @@ class PlaywrightAdapter(BaseAdapter):
 
         if check_session_valid(data_dir, platform=platform):
             return True
-
-        if has_display():
-            log.info("Chưa có phiên đăng nhập hợp lệ cho %s. Tự động mở trình duyệt...", platform)
-            success = interactive_login(platform_name=platform, data_dir=data_dir, timeout_sec=180)
-            if success:
-                if self._ctx:
-                    self.reload_cookies(Path(data_dir))
-                return True
-            log.warning("Đăng nhập tự động cho %s không thành công hoặc hết thời gian chờ.", platform)
-            return False
-
-        log.warning("Chưa có cookies phiên đăng nhập cho %s và không có GUI display.", platform)
+        log.warning("Chưa có cookies phiên đăng nhập hợp lệ cho %s.", platform)
         return False
 
 
@@ -2614,9 +2603,6 @@ def _extract_lazada_dom_price(page) -> float | None:
         for sel in (
             ".pdp-v2-product-price-content-salePrice-amount",
             "[class*='salePrice-amount']",
-            "[class*='subsidy']",
-            "[class*='tro-gia']",
-            "[class*='subsidized']",
             ".pdp-v2-product-price-content-salePrice",
             "[class*='salePrice']",
             ".pdp-mod-product-price-v2",
@@ -2800,6 +2786,9 @@ def _find_best_voucher(price: float | None, vouchers: list[dict], allow_stacking
                 v_type = "platform"
             else:
                 v_type = "shop"
+
+        if v_type == "coins":
+            continue  # coins/cashback come back after purchase, they do not lower the price paid
 
         is_vnd = v.get("is_vnd") or str(code).startswith(("LAZADA", "SHOPEE", "COIN", "CASHBACK", "BONUS", "SHOP", "TITLE", "TMALL", "MOMCLUB"))
         raw_min = float(v.get("min_spend") or 0.0)

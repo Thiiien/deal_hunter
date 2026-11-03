@@ -38,3 +38,4 @@ Nhằm tiếp tục nâng cao hiệu năng cào dữ liệu, độ chính xác c
 ## Trạng thái
 - 104/104 automated unit tests pass.
 - Đã đồng bộ mã nguồn vào Docker container `deal_hunter-deal-hunter-1` và kiểm tra hoạt động trực tiếp.
+- Mục 2 (cảnh báo giảm giá sản phẩm theo dõi) đang tắt theo ADR 0062.

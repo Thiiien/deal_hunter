@@ -85,7 +85,7 @@ def interactive_login(
 
     out_dir = Path(data_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    cookie_file = out_dir / "cookies.json"
+    cookie_file = out_dir / ("cookies_lazada.json" if platform_name.lower() == "lazada" else "cookies.json")
     state_file = out_dir / "storage_state.json"
 
     print("=" * 64)
