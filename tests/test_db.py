@@ -189,6 +189,14 @@ def test_scan_result_does_not_reactivate_product(db):
     assert db.get_product(pid)["active"] == 0
 
 
+def test_price_changed_24h(db):
+    pid = db.upsert_product_meta(_snapshot())
+    db.save_snapshot(pid, _snapshot(price=100_000))
+    assert not db.price_changed_24h(pid)
+    db.save_snapshot(pid, _snapshot(price=90_000))
+    assert db.price_changed_24h(pid)
+
+
 def test_out_of_stock_price_zero_is_not_a_price(db):
     """Out-of-stock rows (price 0) must not become the latest price or pollute the 30-day history."""
     pid = db.upsert_product_meta(_snapshot())

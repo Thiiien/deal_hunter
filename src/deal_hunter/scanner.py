@@ -157,6 +157,7 @@ class Scanner:
         self._pending_verify_scans: set[int] = set()
 
         self._last_tracked_scan_time: float = 0.0
+        self._skipped_cycles: dict[int, int] = {}  # ADR 0066: cycles a far-from-target product has been skipped
 
         self._last_keyword_scan_time: float = 0.0
 
@@ -805,6 +806,17 @@ class Scanner:
 
 
 
+    def _is_due(self, p) -> bool:
+        """ADR 0066: scan every cycle when near target, moving, or unknown; otherwise every third cycle."""
+        pid = p["id"]
+        latest = self._db.get_latest_price(pid)
+        near = latest is not None and p["target_price"] and latest <= p["target_price"] * 1.1
+        if latest is None or near or self._db.price_changed_24h(pid) or self._skipped_cycles.get(pid, 0) >= 2:
+            self._skipped_cycles[pid] = 0
+            return True
+        self._skipped_cycles[pid] = self._skipped_cycles.get(pid, 0) + 1
+        return False
+
     def scan_tracked_products(self) -> dict:
 
         """Scan only user-tracked products."""
@@ -825,11 +837,11 @@ class Scanner:
 
 
 
-            products = self._db.get_active_tracked_products()
+            products = [p for p in self._db.get_active_tracked_products() if self._is_due(p)]
 
             if not products:
 
-                log.info("No active tracked products to scan")
+                log.info("No tracked products due this cycle")
 
                 return {"ok": 0, "fail": 0}
 
@@ -903,7 +915,9 @@ class Scanner:
 
                 res = self.scan_tracked_products()
 
-                self._last_tracked_scan_time = now
+                # ADR 0066: next cycle starts at max(start + interval, end + 60 s), never back to back
+
+                self._last_tracked_scan_time = max(now, time.time() - tracked_interval_sec + 60)
 
                 results["tracked"] = res
 

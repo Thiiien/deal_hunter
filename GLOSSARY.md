@@ -81,8 +81,12 @@ Thông báo lên kênh phát sóng khi giá thực trả của sản phẩm theo
 _Avoid_: Spam kênh deal chung
 
 **Tần suất quét (Scan Interval)**:
-Khoảng nghỉ (phút) giữa hai chu kỳ quét sản phẩm theo dõi, mặc định 2 phút, đổi được trên dashboard hoặc bằng lệnh Telegram và có hiệu lực ở chu kỳ kế tiếp. Giá trị lưu trong cài đặt hệ thống ghi đè giá trị trong file cấu hình.
+Khoảng nghỉ (phút) giữa hai chu kỳ quét sản phẩm theo dõi, mặc định 2 phút, đổi được trên dashboard hoặc bằng lệnh Telegram và có hiệu lực ở chu kỳ kế tiếp. Giá trị lưu trong cài đặt hệ thống ghi đè giá trị trong file cấu hình. Nếu một chu kỳ kéo dài hơn tần suất, chu kỳ kế tiếp bắt đầu sau khi chu kỳ trước kết thúc ít nhất một phút, không bao giờ chạy nối đuôi.
 _Avoid_: Chu kỳ cào, cron interval
+
+**Nhịp quét thích ứng (Adaptive Scan Cadence)**:
+Trong mỗi chu kỳ chỉ quét sản phẩm đang cách giá mong muốn không quá 10%, hoặc có giá thay đổi trong 24 giờ qua, hoặc chưa có giá, hoặc đã bị bỏ qua hai chu kỳ liên tiếp. Sản phẩm xa giá mong muốn và giá đứng yên được quét ba chu kỳ một lần. Cách lấy giá ở mỗi lần quét không đổi, chỉ số lần quét thưa đi.
+_Avoid_: Quét đều mọi sản phẩm mỗi chu kỳ, ưu tiên theo danh mục
 
 **Quét hai tầng (Dual-Speed Polling)**:
 Tầng 1 lấy giá bằng yêu cầu HTTP gọn nhẹ kèm cookie (hiện chỉ Shopee; Lazada luôn dùng trình duyệt). Tầng 2 mở trình duyệt đầy đủ để xác thực lại khi giá chạm giá mong muốn, giảm từ 20% so với lần trước, hoặc giảm từ 65% so với giá niêm yết, và khi phiên hết hạn hay gặp captcha.

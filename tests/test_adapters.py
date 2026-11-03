@@ -1132,6 +1132,29 @@ def test_lazada_swatch_probing_when_target_or_lowest_sku_out_of_stock(config):
     pro_trang = next(v for v in snap.variants if "Trắng" in v.name)
     assert pro_trang.price == 540_700.0
     assert pro_trang.stock_state == "in"
+    # the wait after each click is event-based (price text changed), capped at 500 ms
+    assert mock_page.wait_for_function.call_count == 2
+    assert mock_page.wait_for_function.call_args.kwargs["timeout"] == 500
+
+
+def test_lazada_resource_blocking_aborts_images_only_when_enabled(config):
+    """Image-blocking trial: images aborted only with block_images; Lazada scripts always continue."""
+    from unittest.mock import MagicMock
+    from deal_hunter.adapters.playwright import PlaywrightAdapter
+    def route(url, rtype):
+        r = MagicMock(); r.request.url = url; r.request.resource_type = rtype
+        return r
+    page = MagicMock()
+    PlaywrightAdapter._enable_resource_blocking(page, block_images=True)
+    handler = page.route.call_args[0][1]
+    img, js = route("https://img.lazcdn.com/a.jpg", "image"), route("https://g.lazcdn.com/x.js", "script")
+    handler(img); handler(js)
+    img.abort.assert_called_once(); js.continue_.assert_called_once()
+    page2 = MagicMock()
+    PlaywrightAdapter._enable_resource_blocking(page2)
+    img2 = route("https://img.lazcdn.com/a.jpg", "image")
+    page2.route.call_args[0][1](img2)
+    img2.continue_.assert_called_once()
 
 
 def test_lazada_target_sku_in_stock_matches_price(config):

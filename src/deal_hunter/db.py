@@ -882,6 +882,15 @@ class DB:
             ).fetchone()
             return row["price"] if row else None
 
+    def price_changed_24h(self, product_id: int) -> bool:
+        """ADR 0066: more than one distinct in-stock price in the last 24 h."""
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT COUNT(DISTINCT price) FROM price_history WHERE product_id=? AND price > 0 AND ts > datetime('now','-1 day')",
+                (product_id,),
+            ).fetchone()
+            return row[0] > 1
+
     def get_price_history_30d(self, product_id: int, exclude_latest: bool = False) -> list[float]:
         """Return prices from the last 30 days, newest first.
 

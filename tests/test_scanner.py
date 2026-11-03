@@ -1189,6 +1189,44 @@ def test_scan_due_reads_dynamic_interval_from_db(config, db):
             mock_scan.assert_called_once()
 
 
+def test_scan_due_rests_after_a_long_cycle(config, db):
+    """ADR 0066: a cycle longer than the interval must not start the next one immediately."""
+    from unittest.mock import patch
+    scanner, _ = _make_scanner(config, db)
+    db.set_setting("scan_interval_min", "10")
+    clock = [1000.0]
+    def slow_scan():
+        clock[0] += 1800.0  # the cycle takes 30 min
+        return {"ok": 0, "fail": 0}
+    with patch("time.time", side_effect=lambda: clock[0]):
+        with patch.object(scanner, "scan_tracked_products", side_effect=slow_scan) as mock_scan:
+            scanner.scan_due()
+            scanner.scan_due()  # straight after the 30-min cycle: still resting
+            assert mock_scan.call_count == 1
+            clock[0] += 61.0
+            scanner.scan_due()
+            assert mock_scan.call_count == 2
+
+
+def test_adaptive_cadence_skips_far_products_two_cycles(config, db):
+    """ADR 0066: far from target with a stable price -> every third cycle; within 10% -> every cycle."""
+    from unittest.mock import patch
+    pid = db.add_product_url("https://www.lazada.vn/products/far-i111.html", "lazada", "111", source="user")
+    db.set_target_price(pid, 100_000.0)
+    scanner, _ = _make_scanner(config, db, prices=[500_000.0] * 5)
+    scanner.scan_product(pid)  # price known, far from target
+    with patch.object(scanner, "_scan_platform", return_value=(0, 0)) as mock_platform:
+        scanner.scan_tracked_products()
+        scanner.scan_tracked_products()
+        mock_platform.assert_not_called()
+        scanner.scan_tracked_products()
+        mock_platform.assert_called_once()
+    db.set_target_price(pid, 480_000.0)  # within 10%: every cycle
+    with patch.object(scanner, "_scan_platform", return_value=(0, 0)) as mock_platform:
+        scanner.scan_tracked_products()
+        mock_platform.assert_called_once()
+
+
 def test_only_target_price_alerts_mode(config, db):
     """When only_target_price_alerts is True, suppress price drop and error alerts, only send target price alerts."""
     url = "https://shopee.vn/product-i.777.888"

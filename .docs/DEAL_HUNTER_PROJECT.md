@@ -8,7 +8,7 @@
 
 ## 1. Tóm tắt
 
-**Deal Hunter** là công cụ cá nhân cho một người làm affiliate. Người dùng dán link sản phẩm Shopee hoặc Lazada, đặt **giá mong muốn**, và hệ thống quét giá mỗi 2 phút, ghi **lịch sử giá**, rồi báo Telegram khi **giá thực trả** (sau voucher) chạm giá mong muốn và sản phẩm còn hàng.
+**Deal Hunter** là công cụ cá nhân cho một người làm affiliate. Người dùng dán link sản phẩm Shopee hoặc Lazada, đặt **giá mong muốn**, và hệ thống quét giá theo nhịp thích ứng (mỗi chu kỳ với sản phẩm gần giá mong muốn, ba chu kỳ một lần với sản phẩm còn xa), ghi **lịch sử giá**, rồi báo Telegram khi **giá thực trả** (sau voucher) chạm giá mong muốn và sản phẩm còn hàng.
 
 Hệ thống còn có các phân hệ **khám phá deal** (theo từ khóa, siêu sale, lỗi giá, TMALL trợ giá) và thuật toán **deal thật** theo trung vị 30 ngày. Từ ADR 0055 và 0062 (01/11/2026), các phân hệ này **đang tắt**: tab ẩn, không quét nền, không gửi Telegram. Chúng bật lại bằng công tắc trong Cài đặt, không cần triển khai lại.
 
@@ -29,7 +29,7 @@ Một người vận hành, một bot, một kênh, một bộ cookie mỗi sàn
 3. **Captcha: tự giải trước, dừng khi lỗi kép.** Cookie, rồi kéo thanh trượt, rồi NopeCHA; thất bại thì dừng sàn đó trong chu kỳ và báo admin (ADR 0048 đến 0050).
 4. **Sản phẩm theo dõi là bất khả xâm phạm**: không bị phân hệ khám phá chèn vào, không bị tự ngưng vì lỗi tạm thời (ADR 0030, 0052).
 5. **Giữ nhịp thấp**: trình duyệt đầy đủ chỉ mở khi cần xác thực (ADR 0060).
-6. **Chạy được không cần mạng** nhờ adapter dữ liệu giả, test toàn bộ luồng (211 test).
+6. **Chạy được không cần mạng** nhờ adapter dữ liệu giả, test toàn bộ luồng (215 test).
 
 ## 3. Kiến trúc hiện tại
 
@@ -57,7 +57,7 @@ Một người vận hành, một bot, một kênh, một bộ cookie mỗi sàn
 
 | Phân hệ | Trạng thái | Ghi chú |
 |---|---|---|
-| Sản phẩm theo dõi, giá mong muốn | **Đang chạy** | Chu kỳ 2 phút (DB production đang đặt 15) |
+| Sản phẩm theo dõi, giá mong muốn | **Đang chạy** | Nhịp thích ứng, chu kỳ 5 phút (ADR 0066) |
 | Cảnh báo giảm giá thường, deal thật | Tắt | Bởi chế độ chỉ-giá-mong-muốn (ADR 0062) |
 | Theo từ khóa | Tắt quét nền, tìm thủ công vẫn được | ADR 0055 |
 | Siêu Sale / Flash Sale Lazada | Chỉ cào khi bấm nút, không báo Telegram | ADR 0057 |
@@ -110,7 +110,7 @@ pip install -r requirements.txt && pip install -e .
 playwright install chromium
 python run.py login shopee     # hoặc lazada; mở Chrome để đăng nhập, tự lưu cookie
 python run.py                  # web + bot + scheduler; hoặc run_windows.bat (dừng container trước)
-python -m pytest -q            # 211 test
+python -m pytest -q            # 215 test
 ```
 
 Docker: image `mcr.microsoft.com/playwright/python:v1.48.0-noble`, `shm_size: 2gb`, chỉ mount `./data`, `.env` qua `env_file`, extension đóng gói sẵn (ADR 0004).
@@ -125,17 +125,17 @@ src/deal_hunter/
   db.py       schema và migration SQLite
   bot.py · notifier.py · alerter.py · quota.py · login.py · campaign.py · classifier.py · affiliate.py · config.py · models.py · web.py
 run.py (web + bot + scheduler) · scan.py (CLI) · login.py · dump_prices.py · run_windows.bat
-templates/dashboard.html · tests/ · docs/adr/ (65 ADR) · .docs/ (thiết kế chi tiết từng phân hệ) · GLOSSARY.md
+templates/dashboard.html · tests/ · docs/adr/ (66 ADR) · .docs/ (thiết kế chi tiết từng phân hệ) · GLOSSARY.md
 ```
 
 ## 11. Vấn đề đã biết (rà soát 03/11/2026, lượt 2)
 
-Đã sửa cùng ngày: xác thực tầng 2 khi chạm giá mong muốn không chạy; mặc định config không khớp ADR 0055/0062; bot gửi link gốc thay vì affiliate; script Chrome CDP mở cổng điều khiển ra LAN. Lượt 2: cảnh báo giá mong muốn theo ADR 0065; hoàn xu không còn tính vào giá thực trả và số tiền trợ giá không còn bị đọc thành giá bán (voucher phần trăm không ghi trần vẫn được tính, theo ADR 0021/0059); báo giá về admin khi không có channel; tầng 2 lỗi thì bỏ qua lượt; lượt quét hết hàng (giá 0) không còn tính vào giá mới nhất và trung vị; bốn migration chạy mỗi khởi động bị xóa; hạn ngạch captcha chỉ reset theo ngày thay vì mỗi 10 giây (ADR 0050 giữ nguyên: hết hạn ngạch không chặn quét); file cookie Lazada; khóa quét đồng thời; xóa sản phẩm xóa cả bảng con; escape HTML tin Telegram; từ chối link ngoài Shopee/Lazada; nạp ngưỡng giá từ DB khi khởi động.
+Đã sửa cùng ngày: xác thực tầng 2 khi chạm giá mong muốn không chạy; mặc định config không khớp ADR 0055/0062; bot gửi link gốc thay vì affiliate; script Chrome CDP mở cổng điều khiển ra LAN. Lượt 2: cảnh báo giá mong muốn theo ADR 0065; hoàn xu không còn tính vào giá thực trả và số tiền trợ giá không còn bị đọc thành giá bán (voucher phần trăm không ghi trần vẫn được tính, theo ADR 0021/0059); báo giá về admin khi không có channel; tầng 2 lỗi thì bỏ qua lượt; lượt quét hết hàng (giá 0) không còn tính vào giá mới nhất và trung vị; bốn migration chạy mỗi khởi động bị xóa; hạn ngạch captcha chỉ reset theo ngày thay vì mỗi 10 giây (ADR 0050 giữ nguyên: hết hạn ngạch không chặn quét); file cookie Lazada; khóa quét đồng thời; xóa sản phẩm xóa cả bảng con; escape HTML tin Telegram; từ chối link ngoài Shopee/Lazada; nạp ngưỡng giá từ DB khi khởi động. Tối ưu crawl (ADR 0066): nhịp quét thích ứng; chu kỳ không chạy nối đuôi; nghỉ 4–6 giây giữa hai sản phẩm; chờ sau khi bấm ô biến thể theo sự kiện đổi giá thay vì 500 ms cố định; thử nghiệm chặn ảnh trang Lazada (`BLOCK_IMAGES`, đặt 0 nếu captcha tăng).
 
 Còn lại, xếp theo mức ảnh hưởng:
 
 1. **Lịch sử giá sắp theo giây**: hai dòng cùng giây làm giá mới nhất không xác định.
-2. **Vòng quét không có khoảng nghỉ** khi một chu kỳ dài hơn tần suất.
+2. **Chỉ bấm tối đa 15 ô biến thể mỗi lần quét, không tổ hợp màu × trục**: 13 sản phẩm có trên 15 biến thể (ví dụ #4166 có 58) có thể có biến thể rẻ hơn chưa từng được nhìn thấy. Người dùng xác nhận giữ nguyên (03/11/2026).
 3. **Gộp sản phẩm trùng link làm mất giá mong muốn** và mồ côi bản ghi cảnh báo, biến thể.
 4. **Chuyển hướng về trang chủ và chuỗi "không còn tồn tại" ở bất kỳ đâu trong trang bị coi là ngừng bán**: một lần chặn bot hoặc một bình luận có thể ngưng sản phẩm.
 5. **Dòng lịch sử giá mới nhất bị cập nhật khi đổi biến thể** (lịch sử chưa hoàn toàn chỉ-thêm).
@@ -148,4 +148,4 @@ Còn lại, xếp theo mức ảnh hưởng:
 
 ## 12. Lịch sử quyết định
 
-65 ADR trong `docs/adr/`. Các mốc: 0001 đến 0004 kiến trúc ban đầu; 0005 đến 0029 mở rộng khám phá, Lazada, voucher; 0033 đến 0054 độ chính xác giá và biến thể; 0048 đến 0050 captcha và cảnh báo; 0055, 0057, 0062 thu hẹp về sản phẩm theo dõi; 0060 quét hai tầng; 0063 rồi 0064 thử và rút Chrome CDP; 0065 cảnh báo giá mong muốn khi vào tầm giá, thay 0056.
+66 ADR trong `docs/adr/`. Các mốc: 0001 đến 0004 kiến trúc ban đầu; 0005 đến 0029 mở rộng khám phá, Lazada, voucher; 0033 đến 0054 độ chính xác giá và biến thể; 0048 đến 0050 captcha và cảnh báo; 0055, 0057, 0062 thu hẹp về sản phẩm theo dõi; 0060 quét hai tầng; 0063 rồi 0064 thử và rút Chrome CDP; 0065 cảnh báo giá mong muốn khi vào tầm giá, thay 0056; 0066 nhịp quét thích ứng và chu kỳ không nối đuôi.

@@ -309,8 +309,8 @@ class PlaywrightAdapter(BaseAdapter):
         self._ctx = self._pw = None
 
     @staticmethod
-    def _enable_resource_blocking(page):
-        """Abort external ad trackers only. Never abort internal security scripts."""
+    def _enable_resource_blocking(page, block_images: bool = False):
+        """Abort external ad trackers (and page images when block_images). Never abort internal security scripts."""
         def _block_heavy(route):
             req = route.request
             if any(
@@ -320,7 +320,7 @@ class PlaywrightAdapter(BaseAdapter):
                     route.abort()
                 except Exception:
                     pass
-            elif req.resource_type in ("media",):
+            elif req.resource_type == "media" or (block_images and req.resource_type == "image"):
                 try:
                     route.abort()
                 except Exception:
@@ -567,7 +567,7 @@ class PlaywrightAdapter(BaseAdapter):
 
         # Route block heavy resources on Lazada (only in internal headless mode; never on real Chrome CDP)
         if platform == "lazada" and not getattr(self, "_using_cdp", False):
-            self._enable_resource_blocking(page)
+            self._enable_resource_blocking(page, getattr(self._config, "block_images", False))
 
         try:
             referer = "https://www.lazada.vn/" if platform == "lazada" else "https://shopee.vn/"
@@ -1408,12 +1408,22 @@ class PlaywrightAdapter(BaseAdapter):
                         idx = s["index"]
                         s_name = s["name"]
 
-                        # Click swatch
-                        page.evaluate("""(idx) => {
+                        # Click swatch; returns the price text before the click so we can wait for it to change
+                        prev_price = page.evaluate("""(idx) => {
+                            const el = document.querySelector('.pdp-v2-product-price-content-salePrice-amount, .pdp-v2-product-price-content-salePrice, [class*="salePrice"], .pdp-price_type_normal, .pdp-price');
+                            const before = el ? el.innerText : '';
                             const elements = document.querySelectorAll('.sku-variable-img-wrap, .sku-variable-item, .sku-prop-content-item, [class*="sku-variable-img-wrap"]');
                             if (elements[idx]) elements[idx].click();
+                            return before;
                         }""", idx)
-                        page.wait_for_timeout(500)
+                        try:
+                            # usually 150-250 ms; 500 ms cap keeps the old fixed wait as the worst case (same-price swatches)
+                            page.wait_for_function("""(before) => {
+                                const el = document.querySelector('.pdp-v2-product-price-content-salePrice-amount, .pdp-v2-product-price-content-salePrice, [class*="salePrice"], .pdp-price_type_normal, .pdp-price');
+                                return (el ? el.innerText : '') !== before;
+                            }""", arg=prev_price, timeout=500)
+                        except Exception:
+                            pass
 
                         probe_res = page.evaluate("""() => {
                             let price = null;
@@ -1862,7 +1872,7 @@ class PlaywrightAdapter(BaseAdapter):
                 self._ensure_started()
                 page = self._ctx.new_page()
                 _setup_page(page)
-                self._enable_resource_blocking(page)
+                self._enable_resource_blocking(page, getattr(self._config, "block_images", False))
                 try:
                     url = f"https://www.lazada.vn/catalog/?q={quote_plus(keyword)}"
                     if filters and filters.get("shop_filter") == "official":
@@ -2029,7 +2039,7 @@ class PlaywrightAdapter(BaseAdapter):
         self._ensure_started()
         page = self._ctx.new_page()
         _setup_page(page)
-        self._enable_resource_blocking(page)
+        self._enable_resource_blocking(page, getattr(self._config, "block_images", False))
         items_raw = []
 
         def on_resp(res):

@@ -10,7 +10,8 @@ class Config:
     deal_min_rating: float = 4.0
     deal_min_original_price: float = 500000.0 # filter junk items with pre-discount value < 500k
     scan_interval_min: int = 2
-    request_delay_sec: float = 2.0
+    request_delay_sec: float = 5.0           # ADR 0066: 4-6 s random rest between products
+    block_images: bool = True                # trial from 04/11/2026: abort page images on Lazada
     nopecha_api_key: str = ""
     aff_shopee: str = "{raw}"
     aff_lazada: str = "{raw}"
@@ -45,7 +46,8 @@ class Config:
             deal_min_rating=float(os.getenv("DEAL_MIN_RATING", "4.0")),
             deal_min_original_price=float(os.getenv("DEAL_MIN_ORIGINAL_PRICE", "500000")),
             scan_interval_min=int(os.getenv("SCAN_INTERVAL_MIN", "2")),
-            request_delay_sec=float(os.getenv("REQUEST_DELAY_SEC", "2")),
+            request_delay_sec=float(os.getenv("REQUEST_DELAY_SEC", "5")),
+            block_images=os.getenv("BLOCK_IMAGES", "1").lower() in ("1", "true", "yes"),
             nopecha_api_key=os.getenv("NOPECHA_API_KEY", ""),
             aff_shopee=os.getenv("AFF_SHOPEE", "{raw}"),
             aff_lazada=os.getenv("AFF_LAZADA", "{raw}"),
