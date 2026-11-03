@@ -1,5 +1,9 @@
 # Kiến trúc gói mô-đun hóa theo trách nhiệm đơn
 
+## Trạng thái
+
+Accepted.
+
 Thay vì gom toàn bộ logic vào `core.py` nguyên khối, chúng tôi tổ chức mã nguồn thành package `src/deal_hunter/` với các mô-đun tách biệt theo từng trách nhiệm: `db.py` (schema SQLite), `models.py` (dataclass Snapshot/Deal), `detector.py` (thuật toán phát hiện deal - pure functions không có side effect), `scanner.py` (vòng lặp quét, truy vấn DB), `alerter.py` (logic chống lặp cảnh báo), `quota.py` (giám sát NopeCHA), `notifier.py` (gửi Telegram), `affiliate.py` (tạo link), và `adapters/` riêng. Quyết định này cho phép test từng mô-đun độc lập (đặc biệt `detector.py` là pure function testable không cần mock DB), giảm rủi ro khi debug và chỉnh sửa thuật toán phát hiện deal mà không đụng đến luồng crawler hay Telegram.
 
 ## Considered Options

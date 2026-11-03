@@ -39,4 +39,6 @@ Qua rà soát chuyên sâu mã nguồn:
 
 ## Trạng thái
 - 108/108 automated unit tests pass.
+
+Bị thay thế một phần: URL cào TMALL theo ADR 0046; cảnh báo siêu trợ giá tắt theo ADR 0057; phân hệ TMALL tắt theo ADR 0055.
 - Đã đồng bộ mã nguồn vào Docker container `deal_hunter-deal-hunter-1`.

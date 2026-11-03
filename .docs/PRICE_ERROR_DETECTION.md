@@ -1,5 +1,7 @@
 # Module phát hiện "lỗi giá" (Price Error Detection)
 
+> **Hiện trạng 03/11/2026:** đã triển khai (ADR 0027, 0034). Phân hệ **đang tắt** theo ADR 0055 và 0062. Không triển khai: cột risk_score/risk_label/outcome, lệnh `/xacminh` và `/ketqua`, biến `ERROR_*` (ngưỡng 65% cố định, cổng là ngưỡng giá trị thật tối thiểu). Code và ADR là nguồn sự thật.
+
 > Tài liệu thiết kế chi tiết cho một module mở rộng của dự án **Deal Hunter**.
 > Cập nhật: 23/10/2026.
 > **Trạng thái: mới ở mức thiết kế, chưa được viết code.** Phần "Hiện có sẵn" ở mục 3 là những gì dự án đã làm được, các phần còn lại là đề xuất.

@@ -1,5 +1,9 @@
 # 36. Nhận diện hết hàng qua trạng thái Yêu thích (Wishlist) và số lượng SKU trên Lazada
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 Khi một sản phẩm trên sàn Lazada hết hàng toàn bộ hoặc hết hàng theo từng phân loại (SKU), hệ thống trước đây vẫn nhận diện là Còn hàng (`stock = True`) và ghi nhận mức giá của phân loại hết hàng.
 

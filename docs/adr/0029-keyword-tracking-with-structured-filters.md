@@ -1,5 +1,9 @@
 # 29. Kiến trúc theo dõi sản phẩm theo từ khóa và bộ lọc nâng cao
 
+## Trạng thái
+
+Accepted. Quét nền theo từ khóa đang tắt theo ADR 0055.
+
 ## Bối cảnh
 Trước đây, Deal Hunter hỗ trợ tìm kiếm sản phẩm theo từ khóa (`discover_keyword`) nhưng chỉ chọn sản phẩm có giá thấp nhất hoặc thêm hàng loạt sản phẩm mà không có tiêu chí phân loại nguồn gốc, kho vận và dịch vụ. Người dùng có nhu cầu lọc sâu:
 1. Chỉ muốn mua hàng xuất xứ Việt Nam hoặc vận chuyển từ kho Việt Nam để nhận hàng nhanh.

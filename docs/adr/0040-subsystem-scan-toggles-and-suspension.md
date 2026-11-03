@@ -1,5 +1,9 @@
 # 40. Công tắc bật/tắt quét tự động từng phân hệ (Theo từ khóa, Siêu Sale, Săn lỗi giá)
 
+## Trạng thái
+
+Accepted. Từ ADR 0055 cả bốn phân hệ đều tắt theo mặc định.
+
 ## Bối cảnh
 Hệ thống Deal Hunter vận hành 4 phân hệ quét ngầm độc lập trong vòng lặp `scan_due()`:
 1. Sản phẩm theo dõi (`scan_tracked_products`)

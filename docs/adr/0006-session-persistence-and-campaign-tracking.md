@@ -1,5 +1,9 @@
 # ADR 0006: Lưu Trữ Phiên Đăng Nhập (Cookies) và Theo Dõi Đợt Sale (Campaigns)
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 
 1. Các sàn TMĐT (Shopee, Lazada) áp dụng cơ chế chống bot chặt chẽ với khách vãng lai (guest traffic), thường xuyên chuyển hướng sang trang captcha hoặc trang đăng nhập.

@@ -1,5 +1,7 @@
 # Thiết kế kỹ thuật: Xử lý thanh trượt Captcha Lazada / Alibaba đa tầng (Tạm hoãn / Pending)
 
+> **Hiện trạng 03/11/2026:** vẫn PENDING. Code hiện tại (ADR 0049) kéo thanh trượt **trước** rồi mới chờ NopeCHA, không giới hạn số lần, không cool-down, không thu hoạch token; độ trễ mặc định 2 giây.
+
 > **Tài liệu đặc tả giải pháp vượt thanh trượt NoCaptcha Slider cho sàn Lazada**  
 > **Trạng thái**: 🟡 **PENDING (Tạm hoãn thực hiện)** — Đã hoàn thành vòng phản biện thiết kế (Shared Understanding qua `/grill-with-docs`), lưu trữ làm căn cứ kỹ thuật để triển khai sau khi người dùng yêu cầu.  
 > **Ngày cập nhật**: 02/11/2026  

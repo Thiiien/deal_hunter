@@ -1,5 +1,9 @@
 # ADR 0007: Tự Động Nhận Diện Đăng Nhập và Kiểm Tra Phiên Trước Khi Quét
 
+## Trạng thái
+
+Accepted. Trong Docker không có màn hình nên đăng nhập tương tác không chạy; hệ thống báo admin cấp cookie (ADR 0048, 0050).
+
 ## Bối cảnh
 
 Trước đây, khi cookies chưa được khởi tạo hoặc bị hết hạn, người dùng phải tự nhận thấy lỗi và chạy thủ công lệnh `python login.py`, sau đó phải nhấn phím Enter trên dòng lệnh để lưu session. Người dùng mong muốn quy trình này diễn ra hoàn toàn tự động: khi thiếu hoặc hết hạn cookie, hệ thống tự động mở trình duyệt lên cho người dùng quét mã QR, tự nhận diện khi đăng nhập xong, tự đóng trình duyệt và tự lưu cookies để tiếp tục quét.

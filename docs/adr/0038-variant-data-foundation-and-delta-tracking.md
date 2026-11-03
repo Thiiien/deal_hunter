@@ -1,5 +1,9 @@
 # 38. Kiến trúc nền tảng dữ liệu đa biến thể và cơ chế theo dõi vi sai (Delta Tracking)
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 Người dùng cần theo dõi một sản phẩm ở **biến thể cụ thể (Biến thể chính)** trên sàn thương mại điện tử (Shopee, Lazada). Khi biến thể đó hết hàng, hệ thống cần tự động đánh giá các **biến thể thay thế** trong cùng một listing để đề xuất biến thể còn hàng có giá hiệu dụng rẻ nhất theo chính sách (xem tài liệu [VARIANT_FALLBACK.md](file:///c:/Users/pvthien/source/deal_hunter/.docs/VARIANT_FALLBACK.md)).
 

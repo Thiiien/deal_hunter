@@ -1,5 +1,9 @@
 # ADR 0005: Cơ Chế Khám Phá Sản Phẩm Theo Từ Khóa (Discover & Track)
 
+## Trạng thái
+
+Accepted. Quét nền theo từ khóa đang tắt theo ADR 0055; tìm thủ công vẫn dùng được.
+
 ## Bối cảnh
 
 Người dùng muốn theo dõi deal của một dòng sản phẩm bằng từ khóa (ví dụ: "chuột logitech g102", "phân nền senda") thay vì phải tự tìm và dán từng link sản phẩm cụ thể.

@@ -1,5 +1,9 @@
 # 44. Tinh giản Crawler và chuẩn hóa trạng thái hiển thị cho Sản phẩm theo dõi
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 - Trước đây, crawler luôn cố gắng bóc tách điểm đánh giá (`Rating`) cho tất cả sản phẩm, bao gồm cả sản phẩm thuộc tab "Sản phẩm theo dõi".
 - Bảng hiển thị tab Theo dõi trên Web Dashboard có cột `Rating` và cột `Trạng thái` hiển thị các nhãn phân loại thuật toán (`🔥 Deal thật`, `⏳ Đang thu thập`, `⚠️ Giá ảo`, `Bình thường`).

@@ -1,5 +1,9 @@
 # 28. Tối ưu hóa độ chuẩn xác bóc tách dữ liệu cào và hệ thống voucher đa tầng
 
+## Trạng thái
+
+Accepted. Mục chọn giá phân loại được thay bởi ADR 0053.
+
 ## Bối cảnh
 Trong quá trình vận hành quét sản phẩm trên Shopee và Lazada, một số tình huống bóc tách dữ liệu và tính toán voucher gặp phải sai lệch:
 1. **Bỏ sót voucher sàn trên Shopee**: Khi sản phẩm có voucher từ shop (`shop_vouchers` trong API `pdp/get_pc`), hệ thống coi như đã có voucher và bỏ qua việc quét vé voucher sàn trên DOM, khiến người dùng không nhận được mức giá tối ưu nhất khi cộng dồn.

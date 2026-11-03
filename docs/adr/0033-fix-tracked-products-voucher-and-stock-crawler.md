@@ -1,5 +1,9 @@
 # 33. Chuẩn hóa bóc tách Voucher và nhận diện tình trạng Còn hàng / Hết hàng trên Crawler
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 Khi theo dõi sản phẩm (đặc biệt là bàn phím cơ và thiết bị ngoại vi trên sàn Lazada và Shopee):
 1. **Lỗi bóc tách voucher ảo (`LAZADA_75PCT + LAZADA_75PCT`)**:

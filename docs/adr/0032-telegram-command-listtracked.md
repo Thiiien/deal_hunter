@@ -1,5 +1,9 @@
 # 32. Bổ sung lệnh /listtracked cho Bot Telegram quản lý tab Sản phẩm theo dõi
 
+## Trạng thái
+
+Superseded bởi ADR 0042: lệnh `/listtracked` không còn, thay bằng `/list` (`/ds`), 5 thẻ mỗi trang.
+
 ## Bối cảnh
 Trước đây:
 - Bot Telegram chỉ có lệnh `/theodoi <url>` để thêm mới một liên kết sản phẩm vào danh sách theo dõi.

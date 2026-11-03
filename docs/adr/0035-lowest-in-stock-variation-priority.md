@@ -1,5 +1,9 @@
 # 35. Ưu tiên theo dõi biến thể giá thấp nhất còn hàng và chuyển tiếp biến thể tự động
 
+## Trạng thái
+
+Superseded bởi ADR 0053 và 0054: sản phẩm theo dõi luôn lấy biến thể rẻ nhất còn hàng, bỏ mã biến thể trong link.
+
 ## Bối cảnh
 Trong tab **Sản phẩm theo dõi**, một đường dẫn sản phẩm thường có nhiều biến thể/phân loại (trên Shopee là `models`, trên Lazada là `skuInfos`). Trước đây, việc bóc tách biến thể gặp phải các tồn tại:
 1. **Theo dõi nhầm biến thể đã hết hàng**:

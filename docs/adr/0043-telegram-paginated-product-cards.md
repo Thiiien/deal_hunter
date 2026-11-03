@@ -1,5 +1,9 @@
 # 43. Thẻ sản phẩm tương tác và phân trang danh sách theo dõi trên Telegram
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 - Trước đây, lệnh `/list` gộp 5 sản phẩm vào một tin nhắn dài và xếp toàn bộ 10 nút bấm (`[🎯 Đặt giá #id]` và `[🗑️ Xóa #id]`) dồn xuống dưới đáy tin nhắn.
 - Do giới hạn kiến trúc của Telegram Bot API, các nút bấm Inline Keyboard không thể chèn xen kẽ vào giữa văn bản nội dung.

@@ -1,5 +1,7 @@
 # Tính năng: Theo dõi sản phẩm theo từ khóa và bộ lọc
 
+> **Hiện trạng 03/11/2026:** đã triển khai (ADR 0005, 0015, 0029). Quét nền theo từ khóa **đang tắt** theo ADR 0055; tìm thủ công vẫn dùng được. Tài liệu giữ làm bản thiết kế; một số chi tiết không khớp code (không có TikTok, route đổi là `/api/keywords/<id>/toggle`, `/dstukhoa` chỉ admin, độ trễ mặc định 2 giây). Code và ADR là nguồn sự thật.
+
 > Tài liệu riêng cho tab **"Theo từ khóa"** của dự án Deal Hunter.
 > Cập nhật: 25/10/2026 (danh sách Dịch vụ & Khuyến mãi theo bộ lọc Lazada).
 > Trạng thái: **đã code và kiểm thử với dữ liệu giả**; chưa kiểm chứng trên sàn thật (xem mục 11).

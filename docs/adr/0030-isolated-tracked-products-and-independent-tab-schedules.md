@@ -1,5 +1,9 @@
 # 30. Cô lập sản phẩm theo dõi và cấu hình tần suất quét độc lập theo từng tab
 
+## Trạng thái
+
+Accepted. Chu kỳ quét mặc định là 2 phút theo ADR 0060.
+
 ## Bối cảnh
 Trước đây:
 1. Khi hệ thống quét theo từ khóa (`run_keyword_search`), cào deal Siêu Sale hoặc săn lỗi giá, các hàm lưu dữ liệu (`upsert_product_meta`) không chỉ định trường `source`, khiến SQLite gán giá trị mặc định `source='user'`. Hệ quả là hàng loạt sản phẩm tìm thấy từ các tab khác tự động tràn vào tab **"📦 Sản phẩm theo dõi"**, gây nhiễu loạn danh sách sản phẩm mà người dùng đích thực quan tâm theo dõi.

@@ -1,5 +1,9 @@
 # 34. Tối ưu hóa Crawler phát hiện lỗi giá cấp độ phân loại (SKU) và cơ chế chống báo giả phụ kiện
 
+## Trạng thái
+
+Accepted. Phần chọn phân loại được thay bởi ADR 0053; phân hệ lỗi giá đang tắt theo ADR 0055.
+
 ## Bối cảnh
 Sản phẩm được người dùng theo dõi (tab Sản phẩm theo dõi) thường là những sản phẩm có giá trị cao (như bàn phím cơ, chuột gaming, đồ công nghệ) và người dùng muốn canh bắt các đợt **sập giá / lỗi giá** (price error / flash bug do người bán set nhầm giá, ví dụ: 223.000₫ thay vì 2.230.000₫).
 

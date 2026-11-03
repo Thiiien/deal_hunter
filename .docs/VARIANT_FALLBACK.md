@@ -1,5 +1,7 @@
 # Cấp 1: Tự động chuyển sang biến thể khác còn hàng, giá thấp nhất (cùng một listing)
 
+> **Hiện trạng 03/11/2026:** đã triển khai một phần (ADR 0038 đến 0041, 0053, 0054): bảng biến thể, máy trạng thái tồn kho, quét nhanh xác minh, thay thế âm thầm. Không triển khai: lệnh `/thaythe`, thuộc tính khóa, biến `FALLBACK_*`, chế độ mặc định là `any` chứ không `selected`. Với sản phẩm theo dõi hệ thống luôn chọn biến thể rẻ nhất còn hàng. Code và ADR là nguồn sự thật.
+
 > Tài liệu thiết kế chi tiết cho một tính năng của dự án **Deal Hunter**.
 > Cập nhật: 28/10/2026.
 > **Trạng thái: mới ở mức thiết kế, chưa có code.** Mục 3 ghi rõ dự án hiện có gì và còn thiếu gì.

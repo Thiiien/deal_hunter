@@ -1,5 +1,9 @@
 # ADR 0008: Giá Mong Muốn, Hủy Theo Dõi Sản Phẩm và Cài Đặt Tần Suất Quét
 
+## Trạng thái
+
+Accepted. Các lệnh bot trong ADR này được thay bởi ADR 0042 (`/setgia`, `/xoa`, `/tansuat`).
+
 ## Bối cảnh
 
 Người dùng cần:

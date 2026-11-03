@@ -1,5 +1,9 @@
 # 39. Máy trạng thái tồn kho, Quét nhanh xác minh và Cơ chế thay thế biến thể âm thầm
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 Sau khi hoàn thiện nền tảng dữ liệu đa biến thể ở Phase 1 (ADR 0038), hệ thống cần một cơ chế tự động xử lý khi **Biến thể chính (Main Variant)** bị hết hàng. 
 Theo tài liệu thiết kế [.docs/VARIANT_FALLBACK.md](file:///c:/Users/pvthien/source/deal_hunter/.docs/VARIANT_FALLBACK.md):

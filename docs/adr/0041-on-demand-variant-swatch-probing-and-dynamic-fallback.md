@@ -1,5 +1,9 @@
 # 41. Dò biến thể theo nhu cầu khi hết hàng và tái đánh giá biến thể thay thế động
 
+## Trạng thái
+
+Accepted, mở rộng bởi ADR 0053: sản phẩm theo dõi bấm qua mọi ô biến thể ở mỗi lần quét, không chỉ khi hết hàng.
+
 ## Bối cảnh
 1. **Lệch giá giữa MTOP payload và giao diện DOM của Lazada:**
    - Trên một số chiến dịch khuyến mãi/Flash Sale (như "Tiệc Sale Chớp Nhoáng"), giá chuẩn trong payload tĩnh hoặc MTOP JSON của Lazada chỉ phản ánh mức giá gốc không áp dụng trợ giá tức thời (ví dụ variant Trắng là 1.005.000₫). Mức giá thực tế (540.700₫) chỉ được máy chủ nạp và hiển thị trên DOM khi người dùng nhấp chọn ô biến thể (swatch) tương ứng.

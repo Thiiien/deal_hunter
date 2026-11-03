@@ -3,6 +3,8 @@
 ## Trạng thái
 Đã chấp thuận (Accepted)
 
+Superseded bởi ADR 0064: quay về headless trong Docker; code CDP còn giữ sau biến `CDP_URL`, script khởi chạy Chrome đã xóa.
+
 ## Bối cảnh
 1. **Thách thức về Cookie và Captcha**:
    - Khi cào quét giá trên Shopee và Lazada ở tần suất định kỳ, việc chạy Playwright nội bộ trong môi trường Docker Linux (headless) khiến hệ thống chống bot nhận diện sự bất thường về dấu vân tay trình duyệt (vân tay Canvas, WebGL, thiếu card âm thanh/màn hình thật).

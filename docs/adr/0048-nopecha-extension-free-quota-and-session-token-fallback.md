@@ -6,6 +6,8 @@ Date: 2026-10-30
 
 Accepted
 
+Phần cảnh báo hết hạn ngạch được thay bởi ADR 0050 (chỉ báo khi lỗi kép).
+
 ## Context
 
 Trong quá trình cào dữ liệu từ Shopee và Lazada, các trang bảo vệ thường xuyên đưa ra thử thách Captcha (reCAPTCHA, GeeTest, Cloudflare Turnstile, slider captcha, MTOP punish iframe `/verify/slider`, `/punish`, `/verify/traffic`).

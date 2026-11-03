@@ -1,5 +1,9 @@
 # 31. Tối ưu luồng cào dữ liệu Sản phẩm theo dõi và quản lý lỗi quét liên tiếp
 
+## Trạng thái
+
+Accepted. Tự ngưng sau 5 lỗi chỉ còn áp cho sản phẩm khám phá; sản phẩm theo dõi được giữ và báo admin (ADR 0052).
+
 ## Bối cảnh
 Sau khi phân tách tab "Sản phẩm theo dõi" và áp dụng lịch quét độc lập ở ADR 0030:
 1. **Phạm vi nút Quét thủ công chưa nhất quán**: Nút `⚡ Quét ngay` trong tab Sản phẩm theo dõi trên Dashboard gọi endpoint `/api/scan`. Endpoint này trước đây gọi `scanner.scan_all()`, quét toàn bộ sản phẩm active thuộc mọi nguồn (`user`, `keyword`, `flash_sale`, `price_error`), phá vỡ tính cô lập khi quét thủ công.

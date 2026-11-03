@@ -1,5 +1,9 @@
 # 37. Chuẩn hóa URL Item và trích xuất giá biến thể qua MTOP API trên Lazada
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 Người dùng phản ánh hệ thống hiển thị và theo dõi giá không đúng nguyên tắc: Với sản phẩm có nhiều phân loại (SKU), hệ thống cần ưu tiên lấy giá của phân loại CÒN HÀNG và phải lấy loại có GIÁ THẤP NHẤT.
 Tuy nhiên, trên thực tế sản phẩm 2790 và 2788 lại hiển thị mức giá cao chót vót (4.105.000₫ và 4.044.000₫) thay vì mức giá biến thể thấp nhất còn hàng (khoảng 1.153.000₫).

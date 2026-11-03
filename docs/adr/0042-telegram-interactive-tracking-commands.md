@@ -1,5 +1,9 @@
 # 42. Chuẩn hóa lệnh Telegram Bot và tương tác nút bấm Inline cho Sản phẩm theo dõi
 
+## Trạng thái
+
+Accepted.
+
 ## Bối cảnh
 Trước đây:
 - Tab Sản phẩm theo dõi được quản trị trên Telegram qua các lệnh rời rạc: `/theodoi <url>`, `/giamongmuon <id> <giá>`, `/xoasp <id>`, và `/listtracked`.
