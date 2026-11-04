@@ -1262,6 +1262,28 @@ def test_platform_pauses_after_three_blocks(config, db):
     assert "lazada" not in scanner._paused_until
 
 
+def test_fresh_cookies_end_the_pause_early(config, db):
+    """ADR 0067: pasting cookies ends the rest; the next cycle probes at once instead of waiting 30 min."""
+    import time
+    from unittest.mock import patch
+    from deal_hunter.adapters.base import Blocked
+    for i in (1, 2, 3, 4):
+        db.add_product_url(f"https://www.lazada.vn/products/x-i{i}.html", "lazada", str(i), source="user")
+    scanner, notifier = _make_scanner(config, db)
+    adapter = MagicMock(); adapter.fast_fetch.return_value = None; adapter.fetch.side_effect = Blocked("captcha")
+    scanner._adapter = adapter
+    with patch("time.sleep"):
+        scanner.scan_tracked_products()  # 3 blocks -> paused 30 min
+    adapter.fetch.reset_mock()
+    scanner.end_pause("shopee")  # other platform: no effect
+    scanner.end_pause("lazada")
+    with patch("time.sleep"):
+        scanner.scan_tracked_products()
+    assert adapter.fetch.call_count == 1  # probed one product right away, silently re-paused
+    assert notifier.alert_admin.call_count == 1
+    assert scanner._paused_until["lazada"] > time.time() + 1700
+
+
 def test_only_target_price_alerts_mode(config, db):
     """When only_target_price_alerts is True, suppress price drop and error alerts, only send target price alerts."""
     url = "https://shopee.vn/product-i.777.888"

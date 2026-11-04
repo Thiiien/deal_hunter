@@ -4,7 +4,7 @@ Date: 2026-11-03
 
 ## Trạng thái
 
-Accepted (Đã thống nhất qua quy trình `/grill-with-docs`). Bổ sung ADR 0048 đến 0050; giữ nguyên quy tắc hết hạn ngạch không chặn quét của ADR 0050.
+Accepted (Đã thống nhất qua quy trình `/grill-with-docs`). Bổ sung ADR 0048 đến 0050; giữ nguyên quy tắc hết hạn ngạch không chặn quét của ADR 0050. Bổ sung 04/11/2026: dán cookie mới trên Dashboard kết thúc đợt nghỉ sớm, chu kỳ kế tiếp thử lại ngay thay vì chờ hết 30 phút.
 
 ## Bối cảnh
 

@@ -575,6 +575,7 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
         cookie_path = Path(f"data/{fname}")
         cookie_path.parent.mkdir(parents=True, exist_ok=True)
         cookie_path.write_text(json.dumps(cookie_list, indent=2, ensure_ascii=False), encoding="utf-8")
+        scanner.end_pause(platform)
 
         if hasattr(scanner._adapter, "reload_cookies"):
             try:

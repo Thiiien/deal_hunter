@@ -227,7 +227,7 @@ Sự cố cấp toàn sàn (phiên hết hạn, captcha không giải được, 
 _Avoid_: Tính lỗi sàn vào số lỗi của từng sản phẩm
 
 **Tạm nghỉ sàn sau khi bị chặn (Platform Pause)**:
-Sau một Lỗi sàn diện rộng do bị chặn, sàn đó nghỉ 30 phút rồi tự thử lại với một sản phẩm; còn bị chặn thì nghỉ tiếp 30 phút, quét được thì chạy lại bình thường. Admin nhận đúng hai tin: một khi bắt đầu nghỉ, một khi chạy lại. Không phụ thuộc hạn ngạch giải mã và không cần người can thiệp.
+Sau một Lỗi sàn diện rộng do bị chặn, sàn đó nghỉ 30 phút rồi tự thử lại với một sản phẩm; còn bị chặn thì nghỉ tiếp 30 phút, quét được thì chạy lại bình thường. Admin nhận đúng hai tin: một khi bắt đầu nghỉ, một khi chạy lại. Không phụ thuộc hạn ngạch giải mã và không cần người can thiệp; người dùng dán cookie mới thì đợt nghỉ kết thúc ngay.
 _Avoid_: Báo admin mỗi chu kỳ, dừng hẳn chờ đăng nhập lại
 
 **Đồng bộ cookie từ trình duyệt (Cookie Write-back)**:

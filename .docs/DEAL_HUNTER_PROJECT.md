@@ -29,7 +29,7 @@ Một người vận hành, một bot, một kênh, một bộ cookie mỗi sàn
 3. **Captcha: tự giải trước, nghỉ khi bị chặn.** Cookie, rồi kéo thanh trượt, rồi NopeCHA; 3 link liên tiếp bị chặn thì sàn đó nghỉ 30 phút rồi tự thử lại, admin nhận một tin khi nghỉ và một tin khi chạy lại (ADR 0048 đến 0050, 0067). Cookie của trình duyệt quét được ghi lại sau mỗi lượt thành công.
 4. **Sản phẩm theo dõi là bất khả xâm phạm**: không bị phân hệ khám phá chèn vào, không bị tự ngưng vì lỗi tạm thời (ADR 0030, 0052).
 5. **Giữ nhịp thấp**: trình duyệt đầy đủ chỉ mở khi cần xác thực (ADR 0060).
-6. **Chạy được không cần mạng** nhờ adapter dữ liệu giả, test toàn bộ luồng (217 test).
+6. **Chạy được không cần mạng** nhờ adapter dữ liệu giả, test toàn bộ luồng (218 test).
 
 ## 3. Kiến trúc hiện tại
 
@@ -110,7 +110,7 @@ pip install -r requirements.txt && pip install -e .
 playwright install chromium
 python run.py login shopee     # hoặc lazada; mở Chrome để đăng nhập, tự lưu cookie
 python run.py                  # web + bot + scheduler; hoặc run_windows.bat (dừng container trước)
-python -m pytest -q            # 217 test
+python -m pytest -q            # 218 test
 ```
 
 Docker: image `mcr.microsoft.com/playwright/python:v1.48.0-noble`, `shm_size: 2gb`, chỉ mount `./data`, `.env` qua `env_file`, extension đóng gói sẵn (ADR 0004).

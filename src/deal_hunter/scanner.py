@@ -1292,6 +1292,16 @@ class Scanner:
 
 
 
+    def end_pause(self, platform: str):
+
+        """ADR 0067: fresh cookies end the rest early; the next cycle probes at once."""
+
+        if platform in self._paused_until:
+
+            self._paused_until[platform] = time.time()
+
+
+
     def _scan_platform(self, platform: str, products: list) -> tuple[int, int]:
 
         ok = fail = 0
