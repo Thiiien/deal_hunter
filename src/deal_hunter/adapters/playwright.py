@@ -2292,16 +2292,20 @@ class PlaywrightAdapter(BaseAdapter):
             self._enable_resource_blocking(sub_page)
             try:
                 sub_page.goto(
-                    "https://www.lazada.vn/wow/gcp/lazada/channel/vn/lazmall-channel/thuong-hieu-trung-chinh-hang",
+                    "https://www.lazada.vn/wow/gcp/lazada/channel/vn/affiliate/hFa6ZXcrph",  # ADR 0070: personalised feed, bot sees its own account's recommendations
                     wait_until="domcontentloaded",
                     timeout=25_000,
                     referer="https://www.lazada.vn/",
                 )
                 if any(sig in sub_page.url.lower() for sig in ("/punish", "login.lazada.vn", "verify/slider")):
                     if not self._wait_for_captcha_solve(sub_page, timeout_sec=15):
-                        log.warning("Lazada TMALL channel blocked by captcha at %s", sub_page.url)
+                        log.warning("LazTmall Affiliate channel blocked by captcha at %s", sub_page.url)
                         return []
 
+                try:  # the feed arrives by XHR after domcontentloaded; without this wait the card list is empty
+                    sub_page.wait_for_selector("a[href*='/products/']", timeout=12_000)
+                except Exception:
+                    log.warning("LazTmall Affiliate: no product cards within 12 s at %s", sub_page.url)
                 # Scroll down in increments to trigger lazy-loaded campaign cards
                 for _ in range(4):
                     try:
@@ -2415,10 +2419,11 @@ class PlaywrightAdapter(BaseAdapter):
                         rating=None,
                         category=cat,
                     ))
+                log.info("LazTmall Affiliate: %d cards on page, %d electronics in price range", len(tmall_cards), len(snapshots))
             finally:
                 sub_page.close()
         except Exception as e:
-            log.debug("Tmall official channel crawl error: %s", e)
+            log.warning("LazTmall Affiliate crawl error: %s", e)
 
         return snapshots[:limit]
 

@@ -4,7 +4,7 @@ Date: 2026-10-29
 
 ## Status
 
-Accepted. Tab TMALL ẩn, phân hệ tắt theo ADR 0055.
+Accepted. Tab TMALL ẩn, phân hệ tắt theo ADR 0055. URL nguồn (quyết định 1) thay bằng trang LazTmall Affiliate theo ADR 0070 (05/11/2026); bộ lọc ngành hàng và khoảng giá (quyết định 2 đến 4) giữ nguyên.
 
 ## Context
 

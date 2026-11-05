@@ -5,6 +5,7 @@ Date: 2026-11-01
 ## Trạng thái
 
 Accepted (Đã thống nhất qua quy trình `/grill-with-docs`)
+Tab TMALL mở lại dưới tên LazTmall Affiliate theo ADR 0070 (05/11/2026); ba phân hệ còn lại vẫn tắt.
 Mục 3 (bảo lưu cảnh báo giảm giá theo lịch sử) đã tắt theo ADR 0062.
 
 ## Bối cảnh

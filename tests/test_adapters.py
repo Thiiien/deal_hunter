@@ -16,7 +16,7 @@ def test_parse_platform(url, expected_platform):
 @pytest.mark.parametrize("url,expected_key", [
     ("https://shopee.vn/product-i.111111.222222", "111111.222222"),
     ("https://shopee.vn/product/111111/222222", "111111.222222"),
-    ("https://www.lazada.vn/products/name-i111111-s222222.html", "111111.222222"),
+    ("https://www.lazada.vn/products/name-i111111-s222222.html", "111111"),  # -s is the variant, not the shop
     ("https://www.lazada.vn/products/pdp-i260193102.html", "260193102"),
     ("https://www.tiktok.com/shop/product/abc123xyz", "abc123xyz"),
 ])
@@ -357,7 +357,7 @@ def test_parse_lazada(config):
 
     snap = adapter._parse_lazada(mock_page, "https://www.lazada.vn/products/tai-nghe-bluetooth-i123456-s789.html")
     assert snap.platform == "lazada"
-    assert snap.item_key == "123456.789"
+    assert snap.item_key == "123456"  # -s is the variant, not the shop
     assert snap.name == "Tai Nghe Bluetooth Chống Ồn"
     assert snap.price == 450_000.0
     assert snap.stock is True

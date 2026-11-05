@@ -111,13 +111,24 @@ def create_bot(
             bot.reply_to(msg, "⚠️ Link sản phẩm không hợp lệ (hỗ trợ Shopee và Lazada).")
             return
 
+        existing = db.find_product(platform, item_key)
         pid = db.add_product_url(url, platform, item_key, source="user")
         if target_price:
             db.set_target_price(pid, target_price)
 
         user_context[chat_id] = {"last_product_id": pid}
 
-        wait_msg = bot.reply_to(msg, f"⏳ Đã thêm #{pid} [{platform.upper()}]. Đang quét thông tin sản phẩm...")
+        if existing:
+
+            tp = db.get_product(pid)["target_price"]
+
+            head = f"♻️ Link này đã có trong danh sách theo dõi: #{pid}" + (f" (giá mong muốn {tp:,.0f}₫)" if tp else "")
+
+        else:
+
+            head = f"⏳ Đã thêm #{pid} [{platform.upper()}]"
+
+        wait_msg = bot.reply_to(msg, f"{head}. Đang quét thông tin sản phẩm...")
 
         def _scan_and_reply():
             try:
@@ -526,7 +537,7 @@ def create_bot(
         if action == "publish_anomaly":
             link = linker.build(anom["platform"], anom["url"])
             disc_pct = round(anom["discount"] * 100)
-            plat_badge = "🔵 [LAZADA]" if anom["platform"] == "lazada" else "🟠 [SHOPEE]"
+            plat_badge = {"lazada": "🔵 [LAZADA]", "cellphones": "🟣 [CELLPHONES]"}.get(anom["platform"], "🟠 [SHOPEE]")
             broadcast_text = (
                 f"🚨 <b>KÈO SẬP GIÁ / LỖI GIÁ CỰC MẠNH! (-{disc_pct}%)</b>\n\n"
                 f"{plat_badge} <b>{html.escape(anom['name'])}</b>\n"

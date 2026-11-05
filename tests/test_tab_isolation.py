@@ -632,7 +632,7 @@ def test_tmall_real_time_filtering_and_immediate_cleanup(tmp_path):
     db.upsert_product_meta(s3, source="lazada_tmall")
     db.save_snapshot(pid3, s3)
 
-    # Product 4: wrong category (Son môi - Đời Sống & Tiêu Dùng)
+    # Product 4: category rewritten by the listing scan; checked at discovery only (ADR 0070), so it stays. Was: wrong category (Son môi - Đời Sống & Tiêu Dùng)
     s4 = Snapshot(platform="lazada", item_key="tmall_cosmetic", url="https://lazada.vn/p4.html", name="Son môi", shop="TMALL", price=300000.0, list_price=400000.0, stock=True, category="Đời Sống & Tiêu Dùng")
     pid4 = db.add_product_url(s4.url, s4.platform, s4.item_key, source="lazada_tmall")
     db.upsert_product_meta(s4, source="lazada_tmall")
@@ -643,7 +643,7 @@ def test_tmall_real_time_filtering_and_immediate_cleanup(tmp_path):
     assert res.status_code == 200
     prods = res.get_json()
     tmall_ids = [p["id"] for p in prods if p.get("source") == "lazada_tmall"]
-    assert tmall_ids == [pid1]
+    assert sorted(tmall_ids) == [pid1, pid4]
 
     # 2. Update settings via POST /api/settings triggers immediate DB purge
     res_set = client.post("/api/settings", json={"tmall_max_price": 10000000.0})
@@ -651,8 +651,8 @@ def test_tmall_real_time_filtering_and_immediate_cleanup(tmp_path):
 
     # In DB, invalid products #2, #3, #4 must now be permanently deleted
     all_db = [dict(p) for p in db.get_products_with_latest_price() if dict(p).get("source") == "lazada_tmall"]
-    assert len(all_db) == 1
-    assert all_db[0]["id"] == pid1
+    assert sorted(p["id"] for p in all_db) == [pid1, pid4]  # only the out-of-range #2 and #3 are purged
+    assert all(p["id"] != pid2 and p["id"] != pid3 for p in all_db)
 
 
 def test_track_deal_with_target_price_upgrades_source(tmp_path):

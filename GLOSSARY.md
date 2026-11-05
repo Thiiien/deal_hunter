@@ -1,6 +1,6 @@
 # Deal Hunter
 
-Công cụ cá nhân theo dõi giá một danh sách sản phẩm chọn lọc trên Shopee và Lazada, ghi lịch sử giá và báo Telegram khi sản phẩm chạm giá mong muốn. Các phân hệ khám phá deal (từ khóa, siêu sale, lỗi giá, TMALL) vẫn có trong hệ thống nhưng hiện đang tắt (xem mục cuối).
+Công cụ cá nhân theo dõi giá một danh sách sản phẩm chọn lọc trên Shopee và Lazada, ghi lịch sử giá và báo Telegram khi sản phẩm chạm giá mong muốn. Từ 11/2026 có thêm Quét toàn danh mục nhà bán lẻ trực tiếp (CellphoneS) để bắt giảm sâu và nghi lỗi giá quanh đợt 11.11. Các phân hệ khám phá deal trên sàn (từ khóa, siêu sale, lỗi giá, TMALL) vẫn có trong hệ thống nhưng hiện đang tắt (xem mục cuối).
 
 Glossary chỉ chứa khái niệm nghiệp vụ. Chi tiết kỹ thuật (bảng, cờ, lệnh, bộ chọn DOM) nằm trong `docs/adr/`.
 
@@ -43,7 +43,7 @@ Mức giá trước giảm (mặc định 500.000₫, cấu hình được) mà 
 _Avoid_: Giá sau giảm, ngưỡng cứng không cho cấu hình
 
 **Affiliate Link**:
-Đường dẫn sản phẩm đã gắn mã tiếp thị liên kết của người vận hành để nhận hoa hồng khi phát sinh đơn. Mọi link gửi ra khỏi hệ thống (bot, kênh, dashboard) đều phải là Affiliate Link.
+Đường dẫn sản phẩm đã gắn mã tiếp thị liên kết của người vận hành để nhận hoa hồng khi phát sinh đơn. Mọi link sàn gửi ra khỏi hệ thống (bot, kênh, dashboard) đều phải là Affiliate Link. Ngoại lệ: link của Nhà bán lẻ trực tiếp gửi nguyên dạng vì không có chương trình tiếp thị riêng.
 _Avoid_: Direct link, link mua hàng
 
 **Kênh phát sóng (Broadcast Channel)**:
@@ -73,7 +73,7 @@ Gửi khi giá thực trả bước vào tầm giá mong muốn (còn hàng). G�
 _Avoid_: Báo ở mỗi chu kỳ quét, Cooldown 24 giờ cứng
 
 **Chế độ chỉ thông báo đạt giá mong muốn (Target-Price-Only Alert Mode)**:
-Chế độ mặc định hiện nay: chỉ gửi cảnh báo giá mong muốn; tắt cảnh báo giảm giá thường, deal thật và nghi lỗi giá. Cảnh báo kỹ thuật cho admin (hết hạn phiên, captcha, sản phẩm bị xóa) không bị ảnh hưởng. Bật tắt trong Cài đặt dashboard.
+Chế độ mặc định hiện nay, áp cho Sản phẩm theo dõi: chỉ gửi cảnh báo giá mong muốn; tắt cảnh báo giảm giá thường, deal thật và nghi lỗi giá của sản phẩm theo dõi. Không chặn nghi lỗi giá từ Quét toàn danh mục, vì luồng đó đi vào chat admin để duyệt chứ không lên kênh. Cảnh báo kỹ thuật cho admin (hết hạn phiên, captcha, sản phẩm bị xóa) không bị ảnh hưởng. Bật tắt trong Cài đặt dashboard.
 _Avoid_: Tắt toàn bộ thông báo
 
 **Cảnh báo giảm giá cho sản phẩm theo dõi (Tracked Price-Drop Alert)**:
@@ -81,12 +81,8 @@ Thông báo lên kênh phát sóng khi giá thực trả của sản phẩm theo
 _Avoid_: Spam kênh deal chung
 
 **Tần suất quét (Scan Interval)**:
-Khoảng nghỉ (phút) giữa hai chu kỳ quét sản phẩm theo dõi, mặc định 2 phút, đổi được trên dashboard hoặc bằng lệnh Telegram và có hiệu lực ở chu kỳ kế tiếp. Giá trị lưu trong cài đặt hệ thống ghi đè giá trị trong file cấu hình. Nếu một chu kỳ kéo dài hơn tần suất, chu kỳ kế tiếp bắt đầu sau khi chu kỳ trước kết thúc ít nhất một phút, không bao giờ chạy nối đuôi.
-_Avoid_: Chu kỳ cào, cron interval
-
-**Nhịp quét thích ứng (Adaptive Scan Cadence)**:
-Trong mỗi chu kỳ chỉ quét sản phẩm đang cách giá mong muốn không quá 10%, hoặc có giá thay đổi trong 24 giờ qua, hoặc chưa có giá, hoặc đã bị bỏ qua hai chu kỳ liên tiếp. Sản phẩm xa giá mong muốn và giá đứng yên được quét ba chu kỳ một lần. Cách lấy giá ở mỗi lần quét không đổi, chỉ số lần quét thưa đi.
-_Avoid_: Quét đều mọi sản phẩm mỗi chu kỳ, ưu tiên theo danh mục
+Khoảng nghỉ tối thiểu (phút) giữa hai chu kỳ quét sản phẩm theo dõi, mặc định 2 phút, đổi được trên dashboard hoặc bằng lệnh Telegram và có hiệu lực ở chu kỳ kế tiếp. Giá trị lưu trong cài đặt hệ thống ghi đè giá trị trong file cấu hình. Mỗi chu kỳ quét toàn bộ sản phẩm theo dõi đang hoạt động, sản phẩm cách giá mong muốn không quá 10% được quét trước. Nếu một chu kỳ kéo dài hơn tần suất, chu kỳ kế tiếp bắt đầu sau khi chu kỳ trước kết thúc ít nhất một phút, không bao giờ chạy nối đuôi.
+_Avoid_: Chu kỳ cào, cron interval, nhịp quét thích ứng (bỏ 04/11/2026), bỏ qua sản phẩm xa giá mong muốn
 
 **Quét hai tầng (Dual-Speed Polling)**:
 Tầng 1 lấy giá bằng yêu cầu HTTP gọn nhẹ kèm cookie (hiện chỉ Shopee; Lazada luôn dùng trình duyệt). Tầng 2 mở trình duyệt đầy đủ để xác thực lại khi giá chạm giá mong muốn, giảm từ 20% so với lần trước, hoặc giảm từ 65% so với giá niêm yết, và khi phiên hết hạn hay gặp captcha.
@@ -97,7 +93,7 @@ Khi người dùng dán link mới, hệ thống quét ngay trong nền để c�
 _Avoid_: Lưu URL thụ động
 
 **Chuẩn hóa liên kết và hợp nhất bản ghi (Canonical Link & Merge)**:
-Link rút gọn hoặc có tham số theo dõi được đưa về dạng chuẩn và mã định danh sản phẩm của sàn; mã phân loại trong link bị bỏ để quét toàn bộ biến thể. Nếu sản phẩm đã tồn tại, lịch sử giá được gộp và bản ghi tạm bị dọn.
+Link rút gọn hoặc có tham số theo dõi được đưa về dạng chuẩn và mã định danh sản phẩm của sàn; mã phân loại trong link bị bỏ để quét toàn bộ biến thể, nên hai shop bán cùng món vẫn là hai sản phẩm vì mã listing khác nhau. Nếu sản phẩm đã tồn tại, dashboard và bot báo "đã có trong danh sách" kèm giá mong muốn hiện tại, giá mới nhập ghi đè; lịch sử giá được gộp và bản ghi tạm bị dọn.
 _Avoid_: Lưu link rút gọn vĩnh viễn, nhân đôi sản phẩm
 
 **Hủy theo dõi sản phẩm (Untrack)**:
@@ -242,10 +238,24 @@ _Avoid_: Báo hết lượt khi vẫn cào được
 Khi tầng quét nhanh gặp phiên hết hạn hoặc captcha, hệ thống chuyển sang trình duyệt đầy đủ để giải thử thách và quét tiếp. Hệ thống không tự đăng nhập lại và không tự lưu cookie mới: cookie hết hạn thật sự thì admin được báo tối đa một lần mỗi 6 giờ cho mỗi sàn và phải cấp lại. Đăng nhập tương tác chỉ chạy khi người dùng bấm từ dashboard hoặc chạy lệnh đăng nhập, không bao giờ từ vòng quét.
 _Avoid_: Tự làm mới cookie
 
+## Nhà bán lẻ trực tiếp
+
+**Nhà bán lẻ trực tiếp (First-party Retailer)**:
+Trang bán hàng tự định giá tập trung (CellphoneS, Thế Giới Di Động), không có shop bên thứ ba, không captcha, không cần phiên đăng nhập. Giá bán của một link là giá biến thể màu rẻ nhất; mỗi dung lượng là một link riêng. Khác với Sàn (Shopee, Lazada). Hiện chỉ CellphoneS được quét.
+_Avoid_: Sàn, shop chính hãng, nguồn ngoài
+
+**Quét toàn danh mục (Catalog Sweep)**:
+Lượt lấy giá mọi sản phẩm mới của một Nhà bán lẻ trực tiếp theo từng ngành hàng, không qua danh sách theo dõi, để phát hiện giảm sâu và nghi lỗi giá. Hàng cũ bị loại. Lịch sử giá của nguồn này chỉ ghi thêm khi giá đổi và một lần mỗi ngày để biết sản phẩm còn được quét; vẫn chỉ ghi thêm, không ghi đè. Nhịp quét và công tắc bật tắt nằm trong Cài đặt.
+_Avoid_: Cào toàn trang, crawl sitemap, quét sản phẩm theo dõi
+
+**Giá đỉnh gần đây (Recent Peak Price)**:
+Giá bán cao nhất ghi nhận trong 7 ngày gần nhất của một sản phẩm quét toàn danh mục. Dùng làm mốc "giá trị thật" cho giảm sâu và nghi lỗi giá vì giá niêm yết của nhà bán lẻ thường cao ảo và ít đổi; chỉ khi chưa có lịch sử mới so với giá niêm yết.
+_Avoid_: Giá niêm yết, giá trung vị 30 ngày (dùng cho sàn)
+
 ## Phân hệ khám phá (hiện đang tắt)
 
 **Tạm dừng quét phân hệ tự động (Subsystem Scan Suspension)**:
-Trạng thái hiện tại: quét nền theo từ khóa, siêu sale, lỗi giá và TMALL đều tắt qua Cài đặt; ba tab Nghi lỗi giá, Theo từ khóa, TMALL ẩn khỏi dashboard, tab Siêu Sale còn hiện để cào thủ công; không gửi Telegram từ các phân hệ này. Toàn bộ tài nguyên và hạn ngạch captcha dành cho sản phẩm theo dõi. Bật lại bằng một công tắc trong Cài đặt, không cần triển khai lại.
+Trạng thái hiện tại: quét nền theo từ khóa, siêu sale, lỗi giá tắt qua Cài đặt; hai tab Nghi lỗi giá, Theo từ khóa ẩn khỏi dashboard, tab Siêu Sale còn hiện để cào thủ công, tab LazTmall Affiliate mở lại với lịch quét riêng; không gửi Telegram từ các phân hệ này. Toàn bộ tài nguyên và hạn ngạch captcha dành cho sản phẩm theo dõi. Bật lại bằng một công tắc trong Cài đặt, không cần triển khai lại.
 _Avoid_: Sửa code để dừng một phân hệ
 
 **Khám phá và Theo dõi (Discover & Track)**:
@@ -272,12 +282,12 @@ _Avoid_: Tab khuyến mãi
 Xóa vĩnh viễn sản phẩm Flash Sale thu thập tự động có giá dưới Ngưỡng giá trị thật tối thiểu, không bao giờ chạm sản phẩm theo dõi.
 _Avoid_: Xóa nhầm link người dùng
 
-**Kênh TMALL Trợ Giá (TMALL Subsidy Channel)**:
-Chuyên trang trợ giá sâu của Lazada cho hàng chính hãng, được cào vào tab riêng với bộ lọc ngành hàng điện tử và khoảng giá. Hiện đang tắt.
-_Avoid_: Flash sale thường
+**Kênh LazTmall Affiliate (LazTmall Affiliate Channel)**:
+Trang chuyên đề của Lazada dành cho cộng tác viên, gồm khối Top TMall bán chạy và một luồng sản phẩm gợi ý cá nhân hóa theo tài khoản đang đăng nhập. Được cào vào tab riêng với bộ lọc ngành hàng điện tử và khoảng giá; cào khi bấm nút hoặc theo lịch bật trong Cài đặt; không gửi Telegram. Giá trên thẻ của luồng gợi ý là giá của một phân loại nên chỉ dùng để lọc; giá hiển thị luôn là Giá của sản phẩm (phân loại rẻ nhất còn hàng) đọc từ trang sản phẩm. Sản phẩm ở tab này chỉ vào danh sách theo dõi khi người dùng bấm theo dõi.
+_Avoid_: Kênh TMALL Trợ Giá, Flash sale thường
 
 **Sản phẩm lỗi giá (Price Error Product)**:
-Sản phẩm người bán đặt nhầm giá (thiếu số 0, nhầm đơn vị, nhầm giá phụ kiện) khiến giá giảm từ 65% trở lên so với giá trị thật. Nghi vấn được quét lại sau 2 phút để xác nhận, rồi gửi admin duyệt trước khi đăng kênh. Phân hệ hiện đang tắt.
+Sản phẩm người bán đặt nhầm giá (thiếu số 0, nhầm đơn vị, nhầm giá phụ kiện) khiến giá giảm từ 65% trở lên so với giá trị thật. Nghi vấn được quét lại sau 2 phút để xác nhận, rồi gửi admin duyệt trước khi đăng kênh. Phân hệ trên sàn hiện đang tắt; với Nhà bán lẻ trực tiếp, luồng này chạy từ Quét toàn danh mục và lấy Giá đỉnh gần đây làm giá trị thật. Lỗi giá ở nhà bán lẻ thường bị hủy đơn, nên mục tiêu chính ở đó là giảm sâu thật.
 _Avoid_: Deal giảm giá thông thường
 
 **Duyệt đăng kênh quản trị (Admin Approval)**:

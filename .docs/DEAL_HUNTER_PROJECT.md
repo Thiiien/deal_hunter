@@ -57,13 +57,14 @@ Một người vận hành, một bot, một kênh, một bộ cookie mỗi sàn
 
 | Phân hệ | Trạng thái | Ghi chú |
 |---|---|---|
-| Sản phẩm theo dõi, giá mong muốn | **Đang chạy** | Nhịp thích ứng, chu kỳ 5 phút (ADR 0066) |
+| Sản phẩm theo dõi, giá mong muốn | **Đang chạy** | Quét hết mỗi vòng, sát mốc trước, vòng 39 sản phẩm ≈ 7 phút (ADR 0069) |
 | Cảnh báo giảm giá thường, deal thật | Tắt | Bởi chế độ chỉ-giá-mong-muốn (ADR 0062) |
 | Theo từ khóa | Tắt quét nền, tìm thủ công vẫn được | ADR 0055 |
 | Siêu Sale / Flash Sale Lazada | Chỉ cào khi bấm nút, không báo Telegram | ADR 0057 |
 | Lỗi giá | Tắt | ADR 0055 + 0062 |
-| Lazada TMALL | Tắt | ADR 0055 |
+| LazTmall Affiliate (tab TMALL cũ) | Cào khi bấm nút; quét nền 60 phút khi bật công tắc; không báo Telegram | ADR 0070 |
 | Biến thể, máy trạng thái tồn kho | Đang chạy, không có công tắc | ADR 0038 đến 0041, 0053, 0054 |
+| Quét toàn danh mục CellphoneS | Mặc định tắt, bật và chỉnh nhịp trong Cài đặt | ADR 0068, API công khai, không trình duyệt; nghi lỗi giá về chat admin kể cả khi bật chế độ chỉ-giá-mong-muốn |
 
 Trạng thái tắt được lưu trong bảng `settings` và, từ commit sửa lỗi ngày 03/11, cũng là mặc định trong `config.py`. Mặc định trong file cấu hình bị DB ghi đè lúc khởi động.
 
@@ -85,7 +86,7 @@ SQLite một kết nối chia sẻ, không WAL. Bảng: `products` (có `source`
 
 ## 7. Giao diện
 
-**Dashboard** (`templates/dashboard.html`, HTML/CSS/JS thuần, không CDN, chỉ giao diện tối): tab Sản phẩm theo dõi (mặc định) và Siêu Sale hiện; tab Nghi lỗi giá, Theo từ khóa, Lazada TMALL ẩn. Cài đặt: tần suất quét từng phân hệ, công tắc 4 phân hệ, khoảng giá TMALL, ngưỡng giá trị thật, chế độ chỉ-giá-mong-muốn. Có form nạp cookie và nút đăng nhập.
+**Dashboard** (`templates/dashboard.html`, HTML/CSS/JS thuần, không CDN, chỉ giao diện tối): tab Sản phẩm theo dõi (mặc định), Siêu Sale và LazTmall Affiliate hiện; tab Nghi lỗi giá, Theo từ khóa ẩn. Cài đặt: tần suất quét từng phân hệ, công tắc 4 phân hệ, khoảng giá TMALL, ngưỡng giá trị thật, chế độ chỉ-giá-mong-muốn. Có form nạp cookie và nút đăng nhập.
 
 **API** (`web.py`, 33 route): `/api/summary`, `/api/products` (GET/POST, bulk-delete, purge-junk), `/api/products/<id>` (history, variants, compare, reactivate, target_price), `/api/scan`, `/api/scan-price-errors`, `/api/settings`, `/api/session`, `/api/login`, `/api/cookies`, `/api/search`, `/api/crawl-megasale`, `/api/crawl-tmall`, `/api/anomalies/...`, `/api/keywords/...`, `/api/keyword-products`.
 
@@ -130,7 +131,7 @@ templates/dashboard.html · tests/ · docs/adr/ (67 ADR) · .docs/ (thiết kế
 
 ## 11. Vấn đề đã biết (rà soát 03/11/2026, lượt 2)
 
-Đã sửa cùng ngày: xác thực tầng 2 khi chạm giá mong muốn không chạy; mặc định config không khớp ADR 0055/0062; bot gửi link gốc thay vì affiliate; script Chrome CDP mở cổng điều khiển ra LAN. Lượt 2: cảnh báo giá mong muốn theo ADR 0065; hoàn xu không còn tính vào giá thực trả và số tiền trợ giá không còn bị đọc thành giá bán (voucher phần trăm không ghi trần vẫn được tính, theo ADR 0021/0059); báo giá về admin khi không có channel; tầng 2 lỗi thì bỏ qua lượt; lượt quét hết hàng (giá 0) không còn tính vào giá mới nhất và trung vị; bốn migration chạy mỗi khởi động bị xóa; hạn ngạch captcha chỉ reset theo ngày thay vì mỗi 10 giây (ADR 0050 giữ nguyên: hết hạn ngạch không chặn quét); file cookie Lazada; khóa quét đồng thời; xóa sản phẩm xóa cả bảng con; escape HTML tin Telegram; từ chối link ngoài Shopee/Lazada; nạp ngưỡng giá từ DB khi khởi động. Tối ưu crawl (ADR 0066): nhịp quét thích ứng; chu kỳ không chạy nối đuôi; nghỉ 4–6 giây giữa hai sản phẩm; chờ sau khi bấm ô biến thể theo sự kiện đổi giá thay vì 500 ms cố định; thử nghiệm chặn ảnh trang Lazada (`BLOCK_IMAGES`, đặt 0 nếu captcha tăng). Captcha ban đêm (ADR 0067): sàn tạm nghỉ 30 phút sau 3 lần bị chặn thay vì báo admin mỗi chu kỳ; cookie trình duyệt được ghi lại sau mỗi lượt quét thành công.
+Đã sửa cùng ngày: xác thực tầng 2 khi chạm giá mong muốn không chạy; mặc định config không khớp ADR 0055/0062; bot gửi link gốc thay vì affiliate; script Chrome CDP mở cổng điều khiển ra LAN. Lượt 2: cảnh báo giá mong muốn theo ADR 0065; hoàn xu không còn tính vào giá thực trả và số tiền trợ giá không còn bị đọc thành giá bán (voucher phần trăm không ghi trần vẫn được tính, theo ADR 0021/0059); báo giá về admin khi không có channel; tầng 2 lỗi thì bỏ qua lượt; lượt quét hết hàng (giá 0) không còn tính vào giá mới nhất và trung vị; bốn migration chạy mỗi khởi động bị xóa; hạn ngạch captcha chỉ reset theo ngày thay vì mỗi 10 giây (ADR 0050 giữ nguyên: hết hạn ngạch không chặn quét); file cookie Lazada; khóa quét đồng thời; xóa sản phẩm xóa cả bảng con; escape HTML tin Telegram; từ chối link ngoài Shopee/Lazada; nạp ngưỡng giá từ DB khi khởi động. Tối ưu crawl (ADR 0066): nhịp quét thích ứng (bỏ ngày 04/11 theo ADR 0069: quét hết mỗi vòng, sản phẩm sát giá mong muốn trước); chu kỳ không chạy nối đuôi; nghỉ 4–6 giây giữa hai sản phẩm; chờ sau khi bấm ô biến thể theo sự kiện đổi giá thay vì 500 ms cố định; thử nghiệm chặn ảnh trang Lazada (`BLOCK_IMAGES`, đặt 0 nếu captcha tăng). Captcha ban đêm (ADR 0067): sàn tạm nghỉ 30 phút sau 3 lần bị chặn thay vì báo admin mỗi chu kỳ; cookie trình duyệt được ghi lại sau mỗi lượt quét thành công. Trùng link (04/11): mã Lazada từ quét khám phá còn kèm đuôi biến thể `-s` nên một listing có thể thành hai dòng; nay mọi nguồn dùng mã listing, dòng trùng được gộp về dòng cũ khi khởi động, dashboard và bot báo "đã có trong danh sách" thay vì "đã thêm".
 
 Còn lại, xếp theo mức ảnh hưởng:
 
@@ -148,4 +149,4 @@ Còn lại, xếp theo mức ảnh hưởng:
 
 ## 12. Lịch sử quyết định
 
-67 ADR trong `docs/adr/`. Các mốc: 0001 đến 0004 kiến trúc ban đầu; 0005 đến 0029 mở rộng khám phá, Lazada, voucher; 0033 đến 0054 độ chính xác giá và biến thể; 0048 đến 0050 captcha và cảnh báo; 0055, 0057, 0062 thu hẹp về sản phẩm theo dõi; 0060 quét hai tầng; 0063 rồi 0064 thử và rút Chrome CDP; 0065 cảnh báo giá mong muốn khi vào tầm giá, thay 0056; 0066 nhịp quét thích ứng và chu kỳ không nối đuôi; 0067 tạm nghỉ sàn khi bị chặn và đồng bộ cookie.
+70 ADR trong `docs/adr/`. Các mốc: 0001 đến 0004 kiến trúc ban đầu; 0005 đến 0029 mở rộng khám phá, Lazada, voucher; 0033 đến 0054 độ chính xác giá và biến thể; 0048 đến 0050 captcha và cảnh báo; 0055, 0057, 0062 thu hẹp về sản phẩm theo dõi; 0060 quét hai tầng; 0063 rồi 0064 thử và rút Chrome CDP; 0065 cảnh báo giá mong muốn khi vào tầm giá, thay 0056; 0066 nhịp quét thích ứng và chu kỳ không nối đuôi; 0067 tạm nghỉ sàn khi bị chặn và đồng bộ cookie; 0068 quét toàn danh mục CellphoneS qua API công khai, nguồn không phải sàn đầu tiên; 0069 quét hết mỗi vòng, thay nhịp thích ứng của 0066; 0070 mở lại tab TMALL trên trang LazTmall Affiliate.

@@ -71,11 +71,17 @@ class BaseAdapter(ABC):
             return "lazada"
         if "tiktok" in url:
             return "tiktok"
+        if "cellphones.com.vn" in url:
+            return "cellphones"
         return "unknown"
 
     @staticmethod
     def parse_item_key(url: str) -> str:
         """Extract a stable, platform-scoped product identifier from a URL."""
+        # CellphoneS first: slugs like "cpu-intel-core-i5-13600kf" would match the Lazada "-i<id>" pattern (ADR 0068)
+        if "cellphones.com.vn" in url:
+            slug = urlparse(url).path.rsplit("/", 1)[-1]
+            return slug[:-5] if slug.endswith(".html") else slug
         # Shopee: /product/<shopid>/<itemid>
         m = re.search(r"/product/(\d+)/(\d+)", url)
         if m:
@@ -84,10 +90,10 @@ class BaseAdapter(ABC):
         m = re.search(r"-i\.(\d+)\.(\d+)", url)
         if m:
             return f"{m.group(1)}.{m.group(2)}"
-        # Lazada: -i<itemid>-s<shopid>.html or -i<itemid>.html
-        m = re.search(r"-i(\d+)(?:-s(\d+))?", url)
+        # Lazada: -i<itemid>[-s<skuid>].html; the -s part is the variant, one listing = one product (ADR 0054)
+        m = re.search(r"-i(\d+)", url)
         if m:
-            return f"{m.group(1)}.{m.group(2)}" if m.group(2) else m.group(1)
+            return m.group(1)
         # TikTok Shop: /product/<id>
         m = re.search(r"/product/(\w+)", url)
         if m:

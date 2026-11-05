@@ -39,6 +39,29 @@ CREATE TABLE IF NOT EXISTS price_history (
 );
 CREATE INDEX IF NOT EXISTS idx_ph_product_ts ON price_history(product_id, ts);
 
+CREATE TABLE IF NOT EXISTS retail_items (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform    TEXT    NOT NULL,
+    item_key    TEXT    NOT NULL,
+    url         TEXT    NOT NULL,
+    name        TEXT    NOT NULL DEFAULT '',
+    category    TEXT    NOT NULL DEFAULT '',
+    price       REAL    NOT NULL,
+    list_price  REAL,
+    first_seen  TEXT    NOT NULL DEFAULT (datetime('now')),
+    last_seen   TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(platform, item_key)
+);
+
+CREATE TABLE IF NOT EXISTS retail_price_history (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id     INTEGER NOT NULL REFERENCES retail_items(id) ON DELETE CASCADE,
+    price       REAL    NOT NULL,
+    list_price  REAL,
+    ts          TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_rph_item_ts ON retail_price_history(item_id, ts);
+
 CREATE TABLE IF NOT EXISTS campaigns (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT    NOT NULL,
@@ -189,6 +212,7 @@ class DB:
                 self.conn.execute("ALTER TABLE products ADD COLUMN fail_count INTEGER NOT NULL DEFAULT 0")
             if "main_variant_id" not in cols_p:
                 self.conn.execute("ALTER TABLE products ADD COLUMN main_variant_id INTEGER REFERENCES variants(id)")
+            self._merge_lazada_variant_keys()
 
             # Ensure campaign and voucher columns in price_history
             cols_ph = [r[1] for r in self.conn.execute("PRAGMA table_info(price_history)").fetchall()]
@@ -874,6 +898,10 @@ class DB:
             return {"action": "none"}
 
 
+    def scanned_within(self, product_id: int, hours: int) -> bool:
+        with self._lock:
+            return self.conn.execute("SELECT 1 FROM price_history WHERE product_id=? AND ts > datetime('now', ?)", (product_id, f"-{hours} hours")).fetchone() is not None
+
     def get_latest_price(self, product_id: int) -> float | None:
         with self._lock:
             row = self.conn.execute(
@@ -881,15 +909,6 @@ class DB:
                 (product_id,),
             ).fetchone()
             return row["price"] if row else None
-
-    def price_changed_24h(self, product_id: int) -> bool:
-        """ADR 0066: more than one distinct in-stock price in the last 24 h."""
-        with self._lock:
-            row = self.conn.execute(
-                "SELECT COUNT(DISTINCT price) FROM price_history WHERE product_id=? AND price > 0 AND ts > datetime('now','-1 day')",
-                (product_id,),
-            ).fetchone()
-            return row[0] > 1
 
     def get_price_history_30d(self, product_id: int, exclude_latest: bool = False) -> list[float]:
         """Return prices from the last 30 days, newest first.
@@ -977,6 +996,46 @@ class DB:
             self.conn.execute("DELETE FROM alerts WHERE product_id=?", (product_id,))
             self.conn.commit()
 
+    def _merge_lazada_variant_keys(self):
+        """Discovery once keyed Lazada rows as <item>.<sku>; one listing is one product, so fold them into the plain <item> key."""
+        rows = self.conn.execute("SELECT id, item_key FROM products WHERE platform='lazada' AND item_key LIKE '%.%'").fetchall()
+        for rid, key in rows:
+            if self.conn.execute("SELECT 1 FROM products WHERE id=?", (rid,)).fetchone() is None:
+                continue  # already merged away in this loop
+            base = key.split(".")[0]
+            other = self.conn.execute("SELECT id FROM products WHERE platform='lazada' AND item_key=? AND id<>?", (base, rid)).fetchone()
+            keep = rid if other is None else self._keeper(rid, other[0])
+            if other is not None:
+                self._merge_products(keep, other[0] if keep == rid else rid)
+            self.conn.execute("UPDATE products SET item_key=? WHERE id=?", (base, keep))
+        self.conn.commit()
+
+    def _keeper(self, a: int, b: int) -> int:
+        """The row the user knows by id survives: the user-tracked one, else the older one."""
+        src = {r[0]: r[1] for r in self.conn.execute("SELECT id, source FROM products WHERE id IN (?, ?)", (a, b))}
+        users = [i for i in (a, b) if src.get(i) == "user"]
+        return users[0] if len(users) == 1 else min(a, b)
+
+    def _merge_products(self, into_id: int, from_id: int):
+        """Move history and settings of from_id onto into_id, then delete from_id."""
+        with self._lock:
+            for table in ("price_history", "variants", "fallback_rules", "fallback_events", "price_anomalies", "keyword_products", "alerts"):
+                self.conn.execute(f"UPDATE OR IGNORE {table} SET product_id=? WHERE product_id=?", (into_id, from_id))
+            self.conn.execute(
+                """UPDATE products SET
+                       active=MAX(active, (SELECT active FROM products WHERE id=?2)),
+                       source=CASE WHEN 'user' IN (source, (SELECT source FROM products WHERE id=?2)) THEN 'user' ELSE source END,
+                       target_price=COALESCE(target_price, (SELECT target_price FROM products WHERE id=?2)),
+                       main_variant_id=COALESCE(main_variant_id, (SELECT main_variant_id FROM products WHERE id=?2))
+                   WHERE id=?1""",
+                (into_id, from_id),
+            )
+            self.delete_products([from_id])
+
+    def find_product(self, platform: str, item_key: str) -> sqlite3.Row | None:
+        with self._lock:
+            return self.conn.execute("SELECT * FROM products WHERE platform=? AND item_key=?", (platform, item_key)).fetchone()
+
     def get_product(self, product_id: int) -> sqlite3.Row | None:
         with self._lock:
             return self.conn.execute("SELECT * FROM products WHERE id=?", (product_id,)).fetchone()
@@ -1047,6 +1106,71 @@ class DB:
         if pids:
             self.delete_products(pids)
         return len(pids)
+
+    # ── Retail catalog sweep (ADR 0068) ──────────────────────────────────────
+
+    def record_retail_sweep(self, snapshots) -> list[dict]:
+        """Upsert each item; append history only when the price changed or the last row is a day old.
+
+        Returns one dict per snapshot: item_id, changed, peak_before (7-day peak before this sweep, None if new).
+        """
+        out = []
+        with self._lock:
+            for s in snapshots:
+                row = self.conn.execute(
+                    "SELECT id, price FROM retail_items WHERE platform=? AND item_key=?", (s.platform, s.item_key)
+                ).fetchone()
+                if row is None:
+                    cur = self.conn.execute(
+                        "INSERT INTO retail_items(platform, item_key, url, name, category, price, list_price) VALUES(?,?,?,?,?,?,?)",
+                        (s.platform, s.item_key, s.url, s.name, s.category or "", s.price, s.list_price),
+                    )
+                    item_id, changed = cur.lastrowid, True
+                else:
+                    item_id, changed = row["id"], float(row["price"]) != float(s.price)
+                    self.conn.execute(
+                        "UPDATE retail_items SET url=?, name=?, category=?, price=?, list_price=?, last_seen=datetime('now') WHERE id=?",
+                        (s.url, s.name, s.category or "", s.price, s.list_price, item_id),
+                    )
+                peak = self.conn.execute(
+                    "SELECT MAX(price) FROM retail_price_history WHERE item_id=? AND ts >= datetime('now','-7 days')", (item_id,)
+                ).fetchone()[0]
+                fresh = self.conn.execute(
+                    "SELECT 1 FROM retail_price_history WHERE item_id=? AND ts >= datetime('now','-1 day') LIMIT 1", (item_id,)
+                ).fetchone()
+                if changed or fresh is None:
+                    self.conn.execute(
+                        "INSERT INTO retail_price_history(item_id, price, list_price) VALUES(?,?,?)", (item_id, s.price, s.list_price)
+                    )
+                out.append({"item_id": item_id, "changed": changed, "peak_before": peak})
+            self.conn.commit()
+        return out
+
+    def get_retail_deals(self, limit: int = 200, min_price: float = 0.0, category: str = "") -> list[dict]:
+        """Items seen in the last day priced below their 7-day peak or list price; deepest cut vs peak first."""
+        with self._lock:
+            rows = self.conn.execute(
+                """SELECT * FROM (
+                       SELECT i.*, (SELECT MAX(h.price) FROM retail_price_history h
+                                    WHERE h.item_id = i.id AND h.ts >= datetime('now','-7 days')) AS peak_price
+                       FROM retail_items i
+                       WHERE i.last_seen >= datetime('now','-1 day')
+                         AND (? = '' OR i.category = ?)
+                         AND MAX(COALESCE(i.list_price, 0), i.price) >= ?
+                   )
+                   WHERE COALESCE(peak_price, 0) > price OR COALESCE(list_price, 0) > price
+                   ORDER BY (COALESCE(peak_price, price) - price) / COALESCE(peak_price, price) DESC,
+                            (COALESCE(list_price, 0) - price) / MAX(COALESCE(list_price, 0), price) DESC
+                   LIMIT ?""",
+                (category, category, min_price, limit),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_retail_categories(self) -> list[str]:
+        with self._lock:
+            return [r[0] for r in self.conn.execute(
+                "SELECT DISTINCT category FROM retail_items WHERE category != '' ORDER BY category"
+            ).fetchall()]
 
     def get_setting(self, key: str, default: str = "") -> str:
         with self._lock:

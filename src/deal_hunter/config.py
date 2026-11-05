@@ -35,6 +35,8 @@ class Config:
     tmall_min_price: float = 100000.0
     tmall_max_price: float = 20000000.0
     only_target_price_alerts: bool = True    # ADR 0062
+    cellphones_scan_enabled: bool = False    # ADR 0068: CellphoneS catalog sweep, switched on in Settings
+    cellphones_interval_min: int = 15
     cdp_url: str = ""
 
     @classmethod
@@ -71,6 +73,8 @@ class Config:
             tmall_min_price=float(os.getenv("TMALL_MIN_PRICE", "100000")),
             tmall_max_price=float(os.getenv("TMALL_MAX_PRICE", "20000000")),
             only_target_price_alerts=os.getenv("ONLY_TARGET_PRICE_ALERTS", "1").lower() in ("1", "true", "yes"),
+            cellphones_scan_enabled=os.getenv("CELLPHONES_SCAN_ENABLED", "0").lower() in ("1", "true", "yes"),
+            cellphones_interval_min=int(os.getenv("CELLPHONES_INTERVAL_MIN", "15")),
             cdp_url=os.getenv("CDP_URL", ""),
         )
 

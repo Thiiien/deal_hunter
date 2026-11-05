@@ -358,7 +358,39 @@
 
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
 
-            <label style="font-size:12px;font-weight:600;color:var(--text)">🏷️ Lazada TMALL:</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text)">🟣 CellphoneS toàn danh mục:</label>
+
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;user-select:none">
+
+              <input type="checkbox" id="setting-cellphones-enabled" onchange="updateSubsystemToggle('cellphones')" style="cursor:pointer;width:14px;height:14px">
+
+              <span id="setting-cellphones-status-hint" style="font-weight:600;color:var(--green)">Đang bật</span>
+
+            </label>
+
+          </div>
+
+          <input id="setting-cellphones-interval-input" type="number" min="1" max="1440" style="width:100%;box-sizing:border-box;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;transition:opacity 0.2s" placeholder="Mặc định: 15">
+
+          <div id="setting-cellphones-quick-btns" style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-cellphones-interval-input').value=5">5p ⚡</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-cellphones-interval-input').value=15">15p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-cellphones-interval-input').value=30">30p</button>
+
+            <button type="button" class="secondary" style="padding:1px 6px;font-size:11px" onclick="document.getElementById('setting-cellphones-interval-input').value=60">60p</button>
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+
+            <label style="font-size:12px;font-weight:600;color:var(--text)">🏷️ LazTmall Affiliate:</label>
 
             <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;user-select:none">
 
@@ -495,6 +527,12 @@
 
     </button>
 
+    <button class="nav-tab-btn" id="tab-retail-btn" onclick="switchMainTab('retail')" style="border-color:rgba(124,58,237,0.5)">
+
+      🟣 CellphoneS giảm sâu <span class="tab-count" id="retail-tab-count">0</span>
+
+    </button>
+
     <button class="nav-tab-btn" id="tab-anomalies-btn" onclick="switchMainTab('anomalies')" style="display:none;border-color:rgba(239,68,68,0.4)">
 
       ⚠️ Nghi lỗi giá <span class="tab-count" id="anomalies-tab-count" style="background:#ef4444;color:#fff">0</span>
@@ -507,9 +545,9 @@
 
     </button>
 
-    <button class="nav-tab-btn" id="tab-tmall-btn" onclick="switchMainTab('tmall')" style="display:none">
+    <button class="nav-tab-btn" id="tab-tmall-btn" onclick="switchMainTab('tmall')">
 
-      🏷️ Lazada TMALL <span class="tab-count" id="tmall-tab-count">0</span>
+      🏷️ LazTmall Affiliate <span class="tab-count" id="tmall-tab-count">0</span>
 
     </button>
 
@@ -919,6 +957,44 @@
 
 
 
+  <div id="tab-retail-content" style="display:none">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.4);padding:12px 18px;border-radius:10px">
+
+      <div>
+
+        <div style="font-weight:700;font-size:15px;color:#fff">🟣 CellphoneS giảm sâu so với giá đỉnh 7 ngày</div>
+
+        <div style="color:var(--muted);font-size:12px;margin-top:2px" id="retail-last-sweep">Chưa quét lần nào</div>
+
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+
+        <select id="retail-category" onchange="loadRetailDeals()" style="background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px"><option value="">Mọi ngành hàng</option></select>
+
+        <input id="retail-min-price" type="number" min="0" step="100000" placeholder="Giá đỉnh tối thiểu (mặc định 500.000)" onchange="loadRetailDeals()" style="width:240px;background:#0d1117;color:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px">
+
+        <button onclick="sweepCellphones()" style="background:#7c3aed;font-weight:700;padding:7px 14px;font-size:13px">⚡ Quét ngay</button>
+
+      </div>
+
+    </div>
+
+    <div style="overflow-x:auto">
+
+      <table>
+
+        <thead><tr><th>Sản phẩm</th><th>Giá đỉnh 7 ngày</th><th>Giá hiện tại</th><th>Giảm so đỉnh</th><th>Giảm so niêm yết</th><th>Thấy lúc</th><th></th></tr></thead>
+
+        <tbody id="retail-table"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
   <div id="tab-tmall-content" style="display:none">
 
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;background:rgba(15,20,109,0.25);border:1px solid rgba(15,20,109,0.6);padding:14px 18px;border-radius:10px">
@@ -927,7 +1003,7 @@
 
         <div style="font-weight:700;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px">
 
-          <span>🏷️ Chuyên Trang Lazada TMALL Trợ Giá</span>
+          <span>🏷️ Trang LazTmall Affiliate Độc Quyền</span>
 
           <span class="badge" style="background:#0f146d;color:#fff;font-size:11px">🔵 TMALL Official</span>
 
@@ -935,7 +1011,7 @@
 
         <div style="color:var(--muted);font-size:12px;margin-top:3px">
 
-          Sản phẩm chính hãng LazMall Thiết bị & Phụ kiện điện tử từ kênh TMALL chính thức. Tự động kiểm tra còn hàng / hết hàng và chọn phân loại trợ giá thấp nhất.
+          Thiết bị & Phụ kiện điện tử lấy từ luồng gợi ý của trang LazTmall Affiliate (feed cá nhân hóa theo tài khoản của bot), lọc theo khoảng giá trong Cài đặt. Giá là phân loại rẻ nhất còn hàng, đọc từ trang sản phẩm (tối đa 10 món mỗi lượt cào). Không gửi Telegram.
 
         </div>
 
@@ -945,7 +1021,7 @@
 
         <button id="btn-crawl-tmall" onclick="crawlTmall()" style="background:#0f146d;border:1px solid rgba(255,255,255,0.25);font-weight:700;padding:8px 16px;font-size:13px">
 
-          ⚡ Cào TMALL Trợ Giá Ngay
+          ⚡ Cào LazTmall Ngay
 
         </button>
 
@@ -1195,13 +1271,34 @@ function getPlatformBadge(platform) {
 
 function switchMainTab(tab) {
 
-  if (['anomalies', 'keywords', 'tmall'].includes(tab)) {
+  if (['anomalies', 'keywords'].includes(tab)) {
 
     tab = 'tracked';
 
   }
 
   currentMainTab = tab;
+
+  const retailContent = document.getElementById('tab-retail-content');
+
+  if (retailContent) retailContent.style.display = (tab === 'retail') ? 'block' : 'none';
+
+  if (tab === 'retail') {
+
+    document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+
+    const rb = document.getElementById('tab-retail-btn');
+
+    if (rb) rb.classList.add('active');
+
+    ['tracked', 'megasale', 'anomalies', 'keywords', 'tmall'].forEach(t => { const el = document.getElementById('tab-' + t + '-content'); if (el) el.style.display = 'none'; });
+
+    loadRetailDeals();
+
+    return;
+
+  }
+
 
   document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
 
@@ -1548,6 +1645,92 @@ async function scanPriceErrors() {
 }
 
 
+
+// ── CellphoneS catalog sweep tab (ADR 0068) ──
+
+async function loadRetailDeals() {
+
+  const cat = (document.getElementById('retail-category') || {}).value || '';
+
+  const minP = (document.getElementById('retail-min-price') || {}).value || '';
+
+  const r = await fetch(`/api/retail-deals?category=${encodeURIComponent(cat)}&min_price=${encodeURIComponent(minP)}`);
+
+  if (!r.ok) return;
+
+  const d = await r.json();
+
+  const sel = document.getElementById('retail-category');
+
+  if (sel && sel.options.length <= 1) {
+
+    for (const c of d.categories) { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); }
+
+  }
+
+  const cnt = document.getElementById('retail-tab-count');
+
+  if (cnt) cnt.textContent = d.items.length;
+
+  const info = document.getElementById('retail-last-sweep');
+
+  if (info) info.textContent = d.last_sweep ? `Lượt quét gần nhất: ${new Date(d.last_sweep.ts * 1000).toLocaleString('vi-VN')} · ${d.last_sweep.count} sản phẩm · ${d.last_sweep.changed} đổi giá · ${d.last_sweep.anomalies} nghi lỗi giá` : 'Chưa quét lần nào. Bật trong Cài đặt hoặc bấm Quét ngay.';
+
+  const tbody = document.getElementById('retail-table');
+
+  if (!tbody) return;
+
+  if (!d.items.length) {
+
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Chưa có sản phẩm nào giảm so với giá đỉnh 7 ngày hoặc giá niêm yết. Mốc giá đỉnh cần vài lượt quét để hình thành.</td></tr>`;
+
+    return;
+
+  }
+
+  const fmt = v => v ? Math.round(v).toLocaleString('vi-VN') + '₫' : '—';
+
+  const seen = ts => ts ? new Date(ts.replace(' ', 'T') + 'Z').toLocaleString('vi-VN') : '';
+
+  tbody.innerHTML = d.items.map(p => `<tr>
+
+    <td><a href="${p.affiliate_url}" target="_blank" rel="noopener" style="color:#fff;font-weight:600">${p.name}</a><div style="font-size:11px;color:var(--muted)">📂 ${p.category || 'Khác'}</div></td>
+
+    <td>${fmt(p.peak_price)}</td>
+
+    <td style="font-weight:700;color:var(--green)">${fmt(p.price)}</td>
+
+    <td style="font-weight:700;color:${p.disc_peak_pct >= 30 ? '#f87171' : 'var(--text)'}">${p.disc_peak_pct ? '-' + p.disc_peak_pct + '%' : '0%'}</td>
+
+    <td style="color:var(--muted)">${p.disc_list_pct ? '-' + p.disc_list_pct + '%' : '0%'} <span style="font-size:11px">(niêm yết ${fmt(p.list_price)})</span></td>
+
+    <td style="font-size:11px;color:var(--muted)">${seen(p.last_seen)}</td>
+
+    <td style="white-space:nowrap"><button class="secondary" style="padding:4px 8px;font-size:12px" onclick="trackRetail('${p.url}')">➕ Theo dõi</button></td>
+
+  </tr>`).join('');
+
+}
+
+async function trackRetail(url) {
+
+  const r = await fetch('/api/products', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+
+  if (r.ok) toastAdded(await r.json(), ', đang quét tức thì…'); else toast('⚠️ Không thêm được sản phẩm');
+
+  if (r.ok) loadProducts();
+
+}
+
+async function sweepCellphones() {
+
+  toast('🟣 Đang quét toàn danh mục CellphoneS… (khoảng 1-2 phút)');
+
+  await fetch('/api/sweep-cellphones', { method: 'POST' });
+
+  setTimeout(loadRetailDeals, 90_000);
+
+}
 
 async function loadProducts() {
 
@@ -1979,9 +2162,7 @@ async function trackDeal(url, currentPrice) {
 
     }
 
-    const targetMsg = targetPrice ? ` (Giá mong muốn: ${targetPrice.toLocaleString('vi-VN')}₫)` : '';
-
-    toast(`✅ Đã thêm sản phẩm vào Tab Theo Dõi!${targetMsg}`);
+    toastAdded(d);
 
     await loadProducts();
 
@@ -2315,6 +2496,14 @@ async function compareShops(id) {
 
 
 
+function toastAdded(d, suffix = '') {
+
+  const tp = d.target_price ? ` (giá mong muốn ${Number(d.target_price).toLocaleString('vi-VN')}₫)` : '';
+
+  toast(d.existing ? `♻️ Link này đã có trong Sản phẩm theo dõi: #${d.id}${tp}, đang quét lại…` : `✅ Đã thêm #${d.id} vào Sản phẩm theo dõi${tp}${suffix}`);
+
+}
+
 async function addProduct() {
 
   const url = document.getElementById('url-input').value.trim();
@@ -2327,7 +2516,7 @@ async function addProduct() {
 
   if (d.error) { toast('❌ ' + d.error); return; }
 
-  toast('✅ Đã thêm: ' + d.platform + ' #' + d.id);
+  toastAdded(d);
 
   document.getElementById('url-input').value = '';
 
@@ -3157,7 +3346,7 @@ async function crawlTmall() {
 
       btn.disabled = false;
 
-      btn.textContent = '⚡ Cào TMALL Trợ Giá Ngay';
+      btn.textContent = '⚡ Cào LazTmall Ngay';
 
     }
 
@@ -3219,11 +3408,11 @@ function renderTmallTable() {
 
         <div style="font-size:32px;margin-bottom:8px">🏷️</div>
 
-        <div style="font-weight:600;color:var(--text);font-size:14px;margin-bottom:6px">Chưa có sản phẩm Lazada TMALL nào</div>
+        <div style="font-weight:600;color:var(--text);font-size:14px;margin-bottom:6px">Chưa có sản phẩm LazTmall Affiliate nào</div>
 
         <div style="font-size:12px;margin-bottom:14px">Nhấn nút bên dưới hoặc chờ hệ thống tự động cào theo lịch trình</div>
 
-        <button onclick="crawlTmall()" style="background:#0f146d;border:1px solid rgba(255,255,255,0.25);font-size:12px;padding:6px 14px">⚡ Cào TMALL Trợ Giá Ngay</button>
+        <button onclick="crawlTmall()" style="background:#0f146d;border:1px solid rgba(255,255,255,0.25);font-size:12px;padding:6px 14px">⚡ Cào LazTmall Ngay</button>
 
       </td>
 
@@ -3413,7 +3602,14 @@ async function openSettingsModal() {
 
   updateSubsystemToggle('price-error');
 
+  document.getElementById('setting-cellphones-interval-input').value = d.cellphones_interval_min || 15;
+
+  document.getElementById('setting-cellphones-enabled').checked = d.cellphones_scan_enabled !== undefined ? !!d.cellphones_scan_enabled : false;
+
+  updateSubsystemToggle('cellphones');
+
   updateSubsystemToggle('tmall');
+
 
 
 
@@ -3477,9 +3673,16 @@ async function saveSettings() {
 
   if (peVal === null) return;
 
-  const tmVal = tmEnabled ? parseInterval('setting-tmall-interval-input', 'Tần suất quét Lazada TMALL') : (parseInt(document.getElementById('setting-tmall-interval-input').value, 10) || 120);
+  const tmVal = tmEnabled ? parseInterval('setting-tmall-interval-input', 'Tần suất quét LazTmall Affiliate') : (parseInt(document.getElementById('setting-tmall-interval-input').value, 10) || 120);
 
   if (tmVal === null) return;
+
+  const cpsEnabled = document.getElementById('setting-cellphones-enabled').checked;
+
+  const cpsVal = cpsEnabled ? parseInterval('setting-cellphones-interval-input', 'Tần suất quét CellphoneS') : (parseInt(document.getElementById('setting-cellphones-interval-input').value, 10) || 15);
+
+  if (cpsVal === null) return;
+
 
 
 
@@ -3558,6 +3761,11 @@ async function saveSettings() {
 
       tmall_scan_enabled: tmEnabled,
 
+      cellphones_scan_enabled: cpsEnabled,
+
+      cellphones_interval_min: cpsVal,
+
+
       only_target_price_alerts: onlyTargetAlerts
 
     })
@@ -3586,7 +3794,10 @@ async function saveSettings() {
 
       `Lỗi giá: ${peEnabled ? peVal + 'p' : 'Tắt'}`,
 
-      `TMALL: ${tmEnabled ? tmVal + 'p' : 'Tắt'}`
+      `TMALL: ${tmEnabled ? tmVal + 'p' : 'Tắt'}`,
+
+      `CellphoneS: ${cpsEnabled ? cpsVal + 'p' : 'Tắt'}`
+
 
     ];
 
@@ -4120,7 +4331,7 @@ loadKeywords();
 
 checkSession();
 
-setInterval(() => { loadSummary(); loadProducts(); }, 120_000);
+setInterval(() => { loadSummary(); loadProducts(); if (currentMainTab === 'retail') loadRetailDeals(); }, 120_000);
 
 setInterval(checkSession, 30_000);
 

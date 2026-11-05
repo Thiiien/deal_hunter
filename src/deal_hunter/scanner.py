@@ -1,4 +1,5 @@
 import html
+import json
 
 import logging
 
@@ -19,6 +20,7 @@ from urllib.parse import unquote
 
 
 from .adapters.base import BaseAdapter, Blocked, FetchError, ProductDelisted
+from .adapters.cellphones import CellphonesAdapter
 
 from .affiliate import AffiliateLinker
 
@@ -157,7 +159,6 @@ class Scanner:
         self._pending_verify_scans: set[int] = set()
 
         self._last_tracked_scan_time: float = 0.0
-        self._skipped_cycles: dict[int, int] = {}  # ADR 0066: cycles a far-from-target product has been skipped
         self._paused_until: dict[str, float] = {}  # ADR 0067: platform rests after 3 consecutive blocks
         self._pause_alerted: set[str] = set()
 
@@ -168,8 +169,15 @@ class Scanner:
         self._last_price_error_scan_time: float = 0.0
 
         self._last_tmall_scan_time: float = 0.0
+        self._last_cellphones_scan_time: float = 0.0
+        # ADR 0068: first-party retailers need no browser or cookies; mock mode keeps tests off the network
+        self._retail: dict[str, BaseAdapter] = {} if config.fetch_mode == "mock" else {"cellphones": CellphonesAdapter()}
+        self._sweep_lock = threading.Lock()
 
 
+
+    def _adapter_for(self, platform: str) -> BaseAdapter:
+        return self._retail.get(platform, self._adapter)
 
     def _schedule_fast_verification(self, product_id: int):
 
@@ -507,11 +515,17 @@ class Scanner:
 
             self._db.upsert_product_meta(s, source="lazada_tmall")
 
-            self._db.save_snapshot(pid, s, campaign="TMALL Trợ Giá")
-
             added_ids.append(pid)
 
-        log.info("Discovered and saved %d Lazada TMALL products", len(added_ids))
+        # ADR 0070: the card shows one SKU's price; the product price is the cheapest in-stock variant (ADR 0054), read from the listing
+
+        stale = [pid for pid in added_ids if not self._db.scanned_within(pid, hours=24)][:10]  # shortcut: 10 listings per crawl, raise once NopeCHA is paid
+
+        for pid in stale:
+
+            self.scan_product(pid)
+
+        log.info("LazTmall Affiliate: %d listings kept, %d scanned for the real price", len(added_ids), len(stale))
 
         return added_ids
 
@@ -535,11 +549,11 @@ class Scanner:
 
                 d_p = dict(p)
 
-                p_cat = d_p.get("category") or ""
+                # category is checked once at discovery (title classifier); the listing scan rewrites it with Lazada's breadcrumb
 
                 p_price = d_p.get("current_price") or 0.0
 
-                if p_cat not in ("Thiết Bị Điện Tử", "Phụ Kiện Điện Tử") or not (min_p <= p_price <= max_p):
+                if not (min_p <= p_price <= max_p):
 
                     self._db.delete_product(d_p["id"])
 
@@ -808,16 +822,10 @@ class Scanner:
 
 
 
-    def _is_due(self, p) -> bool:
-        """ADR 0066: scan every cycle when near target, moving, or unknown; otherwise every third cycle."""
-        pid = p["id"]
-        latest = self._db.get_latest_price(pid)
-        near = latest is not None and p["target_price"] and latest <= p["target_price"] * 1.1
-        if latest is None or near or self._db.price_changed_24h(pid) or self._skipped_cycles.get(pid, 0) >= 2:
-            self._skipped_cycles[pid] = 0
-            return True
-        self._skipped_cycles[pid] = self._skipped_cycles.get(pid, 0) + 1
-        return False
+    def _near_target(self, p) -> bool:
+        """Within 10% of the target price (ADR 0069: scanned first in the cycle)."""
+        latest = self._db.get_latest_price(p["id"])
+        return bool(latest is not None and p["target_price"] and latest <= p["target_price"] * 1.1)
 
     def scan_tracked_products(self) -> dict:
 
@@ -839,7 +847,9 @@ class Scanner:
 
 
 
-            products = [p for p in self._db.get_active_tracked_products() if self._is_due(p)]
+            # ADR 0069: every tracked product each cycle, near-target first so they never wait behind the far ones
+
+            products = sorted(self._db.get_active_tracked_products(), key=lambda p: not self._near_target(p))
 
             if not products:
 
@@ -1014,6 +1024,14 @@ class Scanner:
                 except Exception as e:
 
                     log.warning("Lazada TMALL subsidy crawl error: %s", e)
+        # 6. CellphoneS catalog sweep (ADR 0068) in its own thread, so the tracked cycle is never delayed
+        if "cellphones" in self._retail and self._is_subsystem_enabled("cellphones_scan_enabled", default=False):
+            db_cps = self._db.get_setting("cellphones_interval_min")
+            cps_min = int(db_cps) if str(db_cps).isdigit() and int(db_cps) > 0 else (getattr(self._config, "cellphones_interval_min", 15) or 15)
+            if self._last_cellphones_scan_time == 0.0 or (now - self._last_cellphones_scan_time >= cps_min * 60):
+                self._last_cellphones_scan_time = now
+                threading.Thread(target=self.sweep_cellphones, daemon=True, name="cellphones-sweep").start()
+                results["cellphones"] = "started"
 
 
 
@@ -1062,12 +1080,13 @@ class Scanner:
         from .adapters.playwright import canonicalize_url
 
         clean_url = canonicalize_url(p["url"])
+        adapter = self._adapter_for(p["platform"])
 
         try:
             snapshot = None
-            if hasattr(self._adapter, "fast_fetch") and callable(self._adapter.fast_fetch):
+            if hasattr(adapter, "fast_fetch") and callable(adapter.fast_fetch):
                 try:
-                    res = self._adapter.fast_fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
+                    res = adapter.fast_fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
                     if isinstance(res, Snapshot):
                         snapshot = res
                 except Exception as fast_err:
@@ -1075,7 +1094,7 @@ class Scanner:
                     snapshot = None
 
             if snapshot is None:
-                snapshot = self._adapter.fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
+                snapshot = adapter.fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
             else:
                 try:
                     last_p = self._db.get_latest_price(product_id)
@@ -1092,7 +1111,7 @@ class Scanner:
 
                     if should_escalate:
                         log.info("Escalating #%d to Tier-2 Playwright Verifier (price %s)", product_id, curr_p)
-                        verified_snap = self._adapter.fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
+                        verified_snap = adapter.fetch(clean_url, target_sku=target_sku, is_tracked=is_user)
                         if verified_snap and verified_snap.price is not None and verified_snap.price > 0:
                             snapshot = verified_snap
                 except Blocked:
@@ -1111,7 +1130,7 @@ class Scanner:
 
                 self._db.conn.commit()
 
-            if ("source" in p.keys() and p["source"] in ("user", "lazada_tmall")) or "source" not in p.keys():
+            if ("source" in p.keys() and p["source"] == "user") or "source" not in p.keys():
 
                 self._notifier.alert_admin(
 
@@ -1242,9 +1261,9 @@ class Scanner:
 
 
 
-        is_flash_sale = ("source" in p.keys() and p["source"] == "flash_sale")
+        muted_source = ("source" in p.keys() and p["source"] in ("flash_sale", "lazada_tmall"))  # tabs that never message Telegram
 
-        if not only_target_alerts and not alerted and not is_flash_sale and result.status == DealStatus.REAL_DEAL:
+        if not only_target_alerts and not alerted and not muted_source and result.status == DealStatus.REAL_DEAL:
 
             if base_val >= min_orig:
 
@@ -1322,7 +1341,7 @@ class Scanner:
 
         # Platform-specific session preflight check
 
-        if hasattr(self._adapter, "ensure_authenticated"):
+        if platform not in self._retail and hasattr(self._adapter, "ensure_authenticated"):
 
             try:
 
@@ -1519,7 +1538,7 @@ class Scanner:
 
         voucher_line = f"🎫 Mã giảm giá: <code>{v_code}</code> (-{v_disc:,.0f}₫)\n💵 Giá sau áp mã: <b>{f_price:,.0f}₫</b>\n" if v_code else ""
 
-        plat_title = snapshot.platform.title() if snapshot.platform else "Sàn"
+        plat_title = {"cellphones": "CellphoneS"}.get(snapshot.platform) or (snapshot.platform.title() if snapshot.platform else "Sàn")
 
         text = (
 
@@ -1561,7 +1580,7 @@ class Scanner:
 
         voucher_line = f"🎫 Mã giảm giá: <code>{v_code}</code> (-{v_disc:,.0f}₫)\n💵 Giá sau áp mã: <b>{f_price:,.0f}₫</b>\n" if v_code else ""
 
-        plat_title = snapshot.platform.title() if snapshot.platform else "Sàn"
+        plat_title = {"cellphones": "CellphoneS"}.get(snapshot.platform) or (snapshot.platform.title() if snapshot.platform else "Sàn")
 
         text = (
 
@@ -1605,7 +1624,7 @@ class Scanner:
 
         voucher_line = f"🎫 Mã giảm giá: <code>{v_code}</code> (-{v_disc:,.0f}₫)\n" if v_code else ""
 
-        plat_title = snapshot.platform.title() if snapshot.platform else "Sàn"
+        plat_title = {"cellphones": "CellphoneS"}.get(snapshot.platform) or (snapshot.platform.title() if snapshot.platform else "Sàn")
 
         text = (
 
@@ -1653,7 +1672,7 @@ class Scanner:
 
         voucher_line = f"🎫 Mã giảm giá: <code>{v_code}</code> (-{v_disc:,.0f}₫)\n💵 Giá sau áp mã: <b>{f_price:,.0f}₫</b>\n" if v_code else ""
 
-        plat_title = snapshot.platform.title() if snapshot.platform else "Sàn"
+        plat_title = {"cellphones": "CellphoneS"}.get(snapshot.platform) or (snapshot.platform.title() if snapshot.platform else "Sàn")
 
         rating_line = f"⭐ {snapshot.rating:.1f}/5  |  " if snapshot.rating else ""
 
@@ -1699,7 +1718,7 @@ class Scanner:
 
     ):
 
-        if not self._is_subsystem_enabled("price_error_scan_enabled") or self._is_subsystem_enabled("only_target_price_alerts", default=False):
+        if snapshot.platform not in self._retail and (not self._is_subsystem_enabled("price_error_scan_enabled") or self._is_subsystem_enabled("only_target_price_alerts", default=False)):
 
             return
 
@@ -1731,13 +1750,13 @@ class Scanner:
 
         link = self._linker.build(snapshot.platform, snapshot.url)
 
-        plat_badge = "🔵 [LAZADA]" if snapshot.platform == "lazada" else "🟠 [SHOPEE]"
+        plat_badge = {"lazada": "🔵 [LAZADA]", "cellphones": "🟣 [CELLPHONES]"}.get(snapshot.platform, "🟠 [SHOPEE]")
 
         disc_pct = round(discount * 100)
 
         severity = "🚨 CỰC KỲ BẤT THƯỜNG / SẬP GIÁ" if discount >= 0.85 else "⚠️ NGHI LỖI GIÁ"
 
-        plat_title = snapshot.platform.title() if snapshot.platform else "Sàn"
+        plat_title = {"cellphones": "CellphoneS"}.get(snapshot.platform) or (snapshot.platform.title() if snapshot.platform else "Sàn")
 
 
 
@@ -1833,7 +1852,7 @@ class Scanner:
 
         try:
 
-            fresh = self._adapter.fetch(snapshot.url)
+            fresh = self._adapter_for(snapshot.platform).fetch(snapshot.url)
 
             anom = self._db.get_anomaly(anom_id)
 
@@ -1849,9 +1868,9 @@ class Scanner:
 
             disc_pct = round(discount * 100)
 
-            plat_badge = "🔵 [LAZADA]" if snapshot.platform == "lazada" else "🟠 [SHOPEE]"
+            plat_badge = {"lazada": "🔵 [LAZADA]", "cellphones": "🟣 [CELLPHONES]"}.get(snapshot.platform, "🟠 [SHOPEE]")
 
-            plat_title = snapshot.platform.title() if snapshot.platform else "Sàn"
+            plat_title = {"cellphones": "CellphoneS"}.get(snapshot.platform) or (snapshot.platform.title() if snapshot.platform else "Sàn")
 
 
 
@@ -1954,6 +1973,44 @@ class Scanner:
             log.warning("Error during anomaly recheck #%d: %s", anom_id, exc)
 
 
+
+    def sweep_cellphones(self) -> dict:
+        """ADR 0068: catalog sweep of CellphoneS; history on change only; price errors join the admin-approval flow."""
+        adapter = self._retail.get("cellphones")
+        if adapter is None or not self._sweep_lock.acquire(blocking=False):
+            return {"msg": "sweep_unavailable_or_in_progress"}
+        try:
+            try:
+                snaps = list(adapter.iter_catalog())
+            except Exception as exc:
+                self._alert_auth("cellphones", f"⚠️ Quét toàn danh mục CellphoneS thất bại: {html.escape(str(exc))}")
+                return {"ok": 0, "fail": 1}
+            results = self._db.record_retail_sweep(snaps)
+            min_orig = getattr(self._config, "deal_min_original_price", 500000.0)
+            anomalies = 0
+            for snap, res in zip(snaps, results):
+                if not res["changed"]:
+                    continue
+                baseline = res["peak_before"] or snap.list_price or 0.0  # Giá đỉnh gần đây, else list price
+                if baseline < min_orig:
+                    continue
+                is_err, disc = check_price_error(snap.price, baseline, snap.name, min_error_discount=0.65)
+                if not is_err:
+                    continue
+                pid = self._db.upsert_product_meta(snap, source="retail")
+                if self._db.get_recent_anomaly_for_product(pid, hours=4):
+                    continue
+                self._handle_price_error(pid, snap, snap.price, baseline, disc)
+                anomalies += 1
+            last = json.loads(self._db.get_setting("cellphones_last_sweep") or "{}")
+            if last.get("count") and len(snaps) < last["count"] / 2:
+                self._alert_auth("cellphones_shrink", f"⚠️ Lượt quét CellphoneS chỉ thấy {len(snaps)} sản phẩm (lần trước {last['count']}). API có thể đã đổi.")
+            changed = sum(1 for r in results if r["changed"])
+            self._db.set_setting("cellphones_last_sweep", json.dumps({"ts": time.time(), "count": len(snaps), "changed": changed, "anomalies": anomalies}))
+            log.info("CellphoneS sweep: %d products, %d price changes, %d suspected price errors", len(snaps), changed, anomalies)
+            return {"ok": len(snaps), "changed": changed, "anomalies": anomalies}
+        finally:
+            self._sweep_lock.release()
 
     def scan_price_errors(self, keywords: list[str] | None = None) -> list[int]:
 

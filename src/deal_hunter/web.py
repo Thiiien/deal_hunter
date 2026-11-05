@@ -118,8 +118,6 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
                 tm_max = getattr(config, "tmall_max_price", 20000000.0)
                 if tm_price < tm_min or tm_price > tm_max:
                     continue
-                if d.get("category") not in ("Thiết Bị Điện Tử", "Phụ Kiện Điện Tử"):
-                    continue
 
             # Variant extraction and clean product name (ADR 0061)
             var_count = d.get("variants_count") or 0
@@ -155,9 +153,10 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
         from .adapters.playwright import canonicalize_url
         url = canonicalize_url(url)
         platform = BaseAdapter.parse_platform(url)
-        if platform not in ("shopee", "lazada"):
-            return jsonify({"error": "Chỉ hỗ trợ link Shopee và Lazada"}), 400
+        if platform not in ("shopee", "lazada", "cellphones"):
+            return jsonify({"error": "Chỉ hỗ trợ link Shopee, Lazada và CellphoneS"}), 400
         item_key = BaseAdapter.parse_item_key(url)
+        existing = db.find_product(platform, item_key)
         pid = db.add_product_url(url, platform, item_key, source="user")
         target_price = data.get("target_price")
         if target_price is not None:
@@ -175,7 +174,9 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
                 except Exception as err:
                     log.warning("Instant scan error for product #%d: %s", pid, err)
             threading.Thread(target=_instant_scan, daemon=True, name=f"instant-scan-{pid}").start()
-        return jsonify({"id": pid, "platform": platform, "item_key": item_key, "target_price": target_price})
+        return jsonify({"id": pid, "platform": platform, "item_key": item_key, "existing": existing is not None,
+
+                        "target_price": db.get_product(pid)["target_price"]})
 
     @app.patch("/api/products/<int:pid>/target_price")
     def api_set_target_price(pid: int):
@@ -275,6 +276,8 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
         saved_pe_enabled = db.get_setting("price_error_scan_enabled")
         saved_tmall_enabled = db.get_setting("tmall_scan_enabled")
         saved_only_target = db.get_setting("only_target_price_alerts")
+        saved_cps_interval = db.get_setting("cellphones_interval_min", str(getattr(config, "cellphones_interval_min", 15)))
+        saved_cps_enabled = db.get_setting("cellphones_scan_enabled")
 
         return jsonify({
             "scan_interval_min": int(saved_interval) if str(saved_interval).isdigit() else config.scan_interval_min,
@@ -292,13 +295,15 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
             "price_error_scan_enabled": saved_pe_enabled == "1" if saved_pe_enabled in ("0", "1") else getattr(config, "price_error_scan_enabled", True),
             "tmall_scan_enabled": saved_tmall_enabled == "1" if saved_tmall_enabled in ("0", "1") else getattr(config, "tmall_scan_enabled", True),
             "only_target_price_alerts": saved_only_target == "1" if saved_only_target in ("0", "1") else getattr(config, "only_target_price_alerts", True),
+            "cellphones_interval_min": int(saved_cps_interval) if str(saved_cps_interval).isdigit() else getattr(config, "cellphones_interval_min", 15),
+            "cellphones_scan_enabled": saved_cps_enabled == "1" if saved_cps_enabled in ("0", "1") else getattr(config, "cellphones_scan_enabled", False),
         })
 
     @app.post("/api/settings")
     def api_set_settings():
         data = request.get_json(silent=True) or {}
 
-        for key in ["keyword_scan_enabled", "megasale_scan_enabled", "price_error_scan_enabled", "tmall_scan_enabled", "only_target_price_alerts"]:
+        for key in ["keyword_scan_enabled", "megasale_scan_enabled", "price_error_scan_enabled", "tmall_scan_enabled", "only_target_price_alerts", "cellphones_scan_enabled"]:
             if key in data:
                 b_val = bool(data[key])
                 setattr(config, key, b_val)
@@ -309,7 +314,8 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
             ("keyword_interval_min", "Tần suất quét từ khóa"),
             ("megasale_interval_min", "Tần suất quét Siêu Sale"),
             ("price_error_interval_min", "Tần suất quét lỗi giá"),
-            ("tmall_interval_min", "Tần suất quét Lazada TMALL"),
+            ("tmall_interval_min", "Tần suất quét LazTmall Affiliate"),
+            ("cellphones_interval_min", "Tần suất quét CellphoneS"),
         ]
         for key, label in intervals:
             raw_val = data.get(key)
@@ -367,9 +373,8 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
                     for p in db.get_products_with_latest_price():
                         d_p = dict(p)
                         if d_p.get("source") == "lazada_tmall":
-                            p_cat = d_p.get("category") or ""
                             p_price = d_p.get("current_price") or 0.0
-                            if p_cat not in ("Thiết Bị Điện Tử", "Phụ Kiện Điện Tử") or not (min_p <= p_price <= max_p):
+                            if not (min_p <= p_price <= max_p):
                                 db.delete_product(d_p["id"])
                 except Exception as e:
                     log.warning("Immediate tmall cleanup error: %s", e)
@@ -395,6 +400,8 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
             "price_error_scan_enabled": getattr(config, "price_error_scan_enabled", True),
             "tmall_scan_enabled": getattr(config, "tmall_scan_enabled", True),
             "only_target_price_alerts": getattr(config, "only_target_price_alerts", True),
+            "cellphones_interval_min": getattr(config, "cellphones_interval_min", 15),
+            "cellphones_scan_enabled": getattr(config, "cellphones_scan_enabled", False),
         })
 
 
@@ -449,6 +456,38 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
         plat_name = "Tất cả các sàn" if platform == "all" else platform.title()
         return jsonify({"status": "started", "msg": f"Đang cào các deal Siêu Sale từ {plat_name}"})
 
+    @app.get("/api/retail-deals")
+    def api_retail_deals():
+        """ADR 0068: CellphoneS items below their 7-day peak, deepest cut first."""
+        from .affiliate import AffiliateLinker
+        linker = AffiliateLinker(config)
+        try:
+            min_price = float(request.args.get("min_price") or config.deal_min_original_price)
+        except ValueError:
+            return jsonify({"error": "min_price không hợp lệ"}), 400
+        category = (request.args.get("category") or "").strip()
+        items = []
+        from .detector import is_accessory_or_fake
+        for d in db.get_retail_deals(limit=200, min_price=min_price, category=category):
+            peak = d.get("peak_price") or 0.0
+            lp = d.get("list_price") or 0.0
+            if is_accessory_or_fake(d.get("name") or "", d["price"], max(peak, lp)):
+                continue  # same anti-accessory rule as the price-error path: inflated list prices on cases and cables
+            d["name"] = html.escape(d.get("name") or "")
+            d["disc_peak_pct"] = round((peak - d["price"]) / peak * 100) if peak > d["price"] else 0
+            d["disc_list_pct"] = round((lp - d["price"]) / lp * 100) if lp > d["price"] else 0
+            d["affiliate_url"] = linker.build(d["platform"], d["url"])
+            items.append(d)
+        last = db.get_setting("cellphones_last_sweep")
+        return jsonify({"items": items, "categories": db.get_retail_categories(), "last_sweep": json.loads(last) if last else None})
+
+    @app.post("/api/sweep-cellphones")
+    def api_sweep_cellphones():
+        if not scanner or not hasattr(scanner, "sweep_cellphones"):
+            return jsonify({"error": "scanner unavailable"}), 400
+        threading.Thread(target=scanner.sweep_cellphones, daemon=True, name="cellphones-sweep-manual").start()
+        return jsonify({"status": "started", "msg": "Đang quét toàn danh mục CellphoneS"})
+
     @app.post("/api/crawl-tmall")
     def api_crawl_tmall():
         data = request.get_json(silent=True) or {}
@@ -460,7 +499,7 @@ def create_app(config: Config, db: DB, scanner: Scanner) -> Flask:
             except Exception as err:
                 log.error("Crawl TMALL error: %s", err)
         threading.Thread(target=_do_crawl, daemon=True, name="crawl-tmall").start()
-        return jsonify({"status": "started", "msg": "Đang cào các deal từ chuyên trang Lazada TMALL Trợ Giá"})
+        return jsonify({"status": "started", "msg": "Đang cào các deal từ trang LazTmall Affiliate"})
 
     @app.get("/api/products/<int:pid>/history")
     def api_history(pid: int):

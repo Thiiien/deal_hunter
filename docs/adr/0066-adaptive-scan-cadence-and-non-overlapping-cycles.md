@@ -6,6 +6,8 @@ Date: 2026-11-03
 
 Accepted (Đã thống nhất qua quy trình `/grill-with-docs`). Bổ sung ADR 0060; không đổi cách chọn giá của ADR 0054.
 
+Quyết định 1 (nhịp quét thích ứng) superseded bởi ADR 0069 (04/11/2026): mỗi vòng quét toàn bộ sản phẩm theo dõi, sát giá mong muốn trước. Quyết định 2 đến 5 giữ nguyên.
+
 ## Bối cảnh
 
 Số đo từ DB sản xuất ngày 03/11/2026, 39 sản phẩm theo dõi, tất cả Lazada:

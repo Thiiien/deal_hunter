@@ -830,6 +830,32 @@ def test_discover_flash_sale_instant_alert_muted(config, db):
 
 
 
+def test_tmall_discovery_prices_come_from_the_listing_not_the_card(config, db):
+
+    """ADR 0070: the feed card shows one SKU's price; the saved price is the real scan (cheapest in-stock variant)."""
+
+    from unittest.mock import patch
+
+    scanner, _ = _make_scanner(config, db, prices=[123_000.0] * 20)
+
+    ids = scanner.discover_tmall_subsidy(limit=3)
+
+    assert len(ids) == 3
+
+    assert all(db.get_latest_price(pid) == 123_000.0 for pid in ids)  # not the 350k/280k/220k card prices
+
+    assert all(db.scanned_within(pid, hours=24) for pid in ids)
+
+    with patch.object(scanner, "scan_product") as rescan:
+
+        scanner.discover_tmall_subsidy(limit=3)
+
+    assert not set(ids) & {c.args[0] for c in rescan.call_args_list}  # within 24 h the listing is not loaded again (mock keys get rewritten by the scan, so only the first ids count)
+
+
+
+
+
 def test_discover_tmall_subsidy_muted_in_flash_sale(config, db):
 
     """TMALL items discovered via flash sale do not broadcast to Telegram."""
@@ -1210,8 +1236,8 @@ def test_scan_due_rests_after_a_long_cycle(config, db):
             assert mock_scan.call_count == 2
 
 
-def test_adaptive_cadence_skips_far_products_two_cycles(config, db):
-    """ADR 0066: far from target with a stable price -> every third cycle; within 10% -> every cycle."""
+def test_every_tracked_product_is_scanned_each_cycle(config, db):
+    """ADR 0069: a far-from-target product with a stable price is still scanned every cycle."""
     from unittest.mock import patch
     pid = db.add_product_url("https://www.lazada.vn/products/far-i111.html", "lazada", "111", source="user")
     db.set_target_price(pid, 100_000.0)
@@ -1220,13 +1246,22 @@ def test_adaptive_cadence_skips_far_products_two_cycles(config, db):
     with patch.object(scanner, "_scan_platform", return_value=(0, 0)) as mock_platform:
         scanner.scan_tracked_products()
         scanner.scan_tracked_products()
-        mock_platform.assert_not_called()
-        scanner.scan_tracked_products()
-        mock_platform.assert_called_once()
-    db.set_target_price(pid, 480_000.0)  # within 10%: every cycle
+        assert mock_platform.call_count == 2
+
+
+def test_near_target_products_are_scanned_first(config, db):
+    """Within a cycle, products within 10% of their target go before the far ones, whatever their id."""
+    from unittest.mock import patch
+    far = db.add_product_url("https://www.lazada.vn/products/far-i111.html", "lazada", "111", source="user")
+    near = db.add_product_url("https://www.lazada.vn/products/near-i222.html", "lazada", "222", source="user")
+    db.set_target_price(far, 100_000.0)
+    db.set_target_price(near, 480_000.0)
+    scanner, _ = _make_scanner(config, db, prices=[500_000.0] * 5)
+    scanner.scan_product(far)
+    scanner.scan_product(near)
     with patch.object(scanner, "_scan_platform", return_value=(0, 0)) as mock_platform:
         scanner.scan_tracked_products()
-        mock_platform.assert_called_once()
+    assert [p["id"] for p in mock_platform.call_args[0][1]] == [near, far]
 
 
 def test_platform_pauses_after_three_blocks(config, db):
